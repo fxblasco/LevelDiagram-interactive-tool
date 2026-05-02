@@ -6,9 +6,9 @@ ps2 = rand(40, 2);
 pf3 = rand(45, 2) * 100;
 ps3 = rand(45, 4);
 
-c1 = Concept(pf1, ps1, 'PID');
-c1.labels.objectives = {'IAE', 'TV'};
+c1 = Concept(pf1, ps1, 'PID');c1.labels.objectives = {'IAE', 'TV'};
 c1.labels.parameters = {'Kp', 'Ti', 'Td'};
+
 
 c2 = Concept(pf2, ps2, 'GPC');
 c2.labels.objectives = {'IAE', 'TV'};

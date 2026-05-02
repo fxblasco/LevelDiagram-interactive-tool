@@ -583,11 +583,17 @@ classdef LevelDiagram < handle
             end
 
             % Subplots de objetivos
+            if pfdim <= 6
+                pfRows = 1; pfCols = pfdim;
+            else
+                pfRows = 2; pfCols = ceil(pfdim / 2);
+            end
+
             obj.axesObjectives    = cell(1, pfdim);
             obj.scatterObjectives = cell(nConcepts, pfdim);
 
             for j = 1:pfdim
-                obj.axesObjectives{j} = subplot(1, pfdim, j);
+                obj.axesObjectives{j} = subplot(pfRows, pfCols, j);
                 axPos    = get(obj.axesObjectives{j}, 'Position');
                 axPos(2) = axPos(2) * (1 - checkH);
                 axPos(4) = axPos(4) * (1 - checkH);
@@ -628,8 +634,13 @@ classdef LevelDiagram < handle
                 'Position',    pos);
             obj.figsParameters{conceptIdx} = fig;
 
-            nCols = min(3, psdim);
-            nRows = ceil(psdim / nCols);
+            if psdim <= 6
+                nRows = 1;
+                nCols = psdim;
+            else
+                nRows = 2;
+                nCols = ceil(psdim / 2);
+            end
             axesPar = cell(1, psdim);
             scatPar = cell(1, psdim);
 
