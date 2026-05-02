@@ -22,33 +22,7 @@ ldtool2026/
 │       ├── Concept.m
 │       └── LevelDiagram.m
 └── test/             # Examples and test scripts
-    ├── pruebasLd.m
-    ├── ejemplosConcept.m
-    └── verPunto.m
-```
-
-## Quick start
-
-```matlab
-addpath('src/matlab')
-
-% 1. Create concepts
-c1 = Concept(pf1, ps1, 'PID');
-c1.labels.objectives = {'IAE', 'TV'};
-c1.labels.parameters = {'Kp', 'Ti', 'Td'};
-
-c2 = Concept(pf2, ps2, 'GPC');
-
-% 2. Build Level Diagram
-ld = LevelDiagram('comparison');
-ld.addConcept(c1);
-ld.addConcept(c2);
-ld.draw();
-
-% 3. Customize
-ld.colorBy(c1, pf1(:,1));           % color by first objective
-ld.syncByNorm(1);                   % switch to L1 norm
-ld.onSelect(c1, @myCallback);       % callback on point click
+    ├── examples....
 ```
 
 ## Requirements
