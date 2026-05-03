@@ -26,6 +26,7 @@ classdef LevelDiagram < handle
         colorData   cell          = {}     % Cell array de datos de color por concepto
         sizeData    cell          = {}     % Cell array de datos de tamaño por concepto
         markerData  cell          = {}     % Cell array de marcadores por concepto
+        sortOrder   cell          = {}     % Cell array de vectores de orden de trazado por concepto
         callbacks   cell          = {}     % Cell array de {conceptIdx, callback}
         selection   cell          = {}    % Cell array de struct {conceptIdx, indices} por concepto
 
@@ -38,10 +39,14 @@ classdef LevelDiagram < handle
         scatterParameters cell = {}       % Handles scatter parámetros por concepto
         scatterHighlightObj  cell = {}    % Handles scatter de resaltado (uno por concepto)
         checkboxHandles      cell = {}    % Handles checkboxes de visibilidad por concepto
+        colorbarHandles      cell = {}    % Handles colorbar por concepto (figura parámetros)
+        colorbarRefAxes      cell = {}    % Axes de referencia para el colorbar
+        colorbarLabels       cell = {}    % Handles de la etiqueta del colorbar por concepto
         figPanel        = []              % Handle figura panel de información
         panelTables     cell = {}         % Cell array de uitables, una por concepto
         panelLabels     cell = {}         % Cell array de uicontrol text, una por concepto
         panelButtons    cell = {}         % Cell array de botones {ejecutar,csv,ws} por concepto
+        conceptVisible  logical = []     % visibilidad por concepto (true = visible)
         isDragging      logical = false
         dragStart       = []
         dragRect        = []    % handle del rectángulo de selección
@@ -137,6 +142,11 @@ classdef LevelDiagram < handle
             obj.sizeData{end+1}   = obj.DEFAULT_SIZE;
             markerIdx = mod(nC-1, numel(obj.DEFAULT_MARKERS)) + 1;
             obj.markerData{end+1} = obj.DEFAULT_MARKERS{markerIdx};
+            obj.sortOrder{end+1}       = (1:concept.nind)';
+            obj.conceptVisible(end+1)  = true;
+            obj.colorbarHandles{end+1} = [];
+            obj.colorbarRefAxes{end+1} = [];
+            obj.colorbarLabels{end+1}  = [];
 
             % Recalcular bounds globales y sync de TODOS los conceptos
             obj.recalcGlobalBoundsAndSync();
@@ -151,6 +161,11 @@ classdef LevelDiagram < handle
             obj.colorData(idx)         = [];
             obj.sizeData(idx)          = [];
             obj.markerData(idx)        = [];
+            obj.sortOrder(idx)         = [];
+            obj.conceptVisible(idx)    = [];
+            obj.colorbarHandles(idx)   = [];
+            obj.colorbarRefAxes(idx)   = [];
+            obj.colorbarLabels(idx)    = [];
 
             % Cerrar figura de parámetros del concepto eliminado
             if ~isempty(obj.figsParameters) && idx <= numel(obj.figsParameters)
@@ -243,6 +258,7 @@ classdef LevelDiagram < handle
                     obj.concepts{i}.objectives, obj.globalBounds, p);
                 obj.updateYAxis(i);
             end
+            obj.rescaleYAxes();
         end
 
         function resetBounds(obj)
@@ -292,6 +308,7 @@ classdef LevelDiagram < handle
                 obj.syncValues{i} = values{i}(:);
                 obj.updateYAxis(i);
             end
+            obj.rescaleYAxes();
         end
 
         %% Coloreado
@@ -299,26 +316,58 @@ classdef LevelDiagram < handle
             % Asigna colores a los puntos del concepto
             %
             % Uso:
-            %   ld.colorBy(c, indicador)                      % vector nind x 1 -> colormap
-            %   ld.colorBy(c, indicador, 'colormap', 'cool')  % colormap específico
-            %   ld.colorBy(c, indicador, 'reverse', true)     % invertir mapa
-            %   ld.colorBy(c, indicador, 'clim', [0 100])     % límites fijos
-            %   ld.colorBy(c, colores_rgb)                    % matriz nind x 3: color por punto
-            %   ld.colorBy(c, [r g b])                        % vector 1x3: color único para todos
+            %   ld.colorBy(c, indicador)                           % vector nind x 1 -> colormap
+            %   ld.colorBy(c, indicador, 'colormap', 'hot')        % colormap específico
+            %   ld.colorBy(c, indicador, 'reverseColor', true)     % invertir colores del mapa
+            %   ld.colorBy(c, indicador, 'reverseInd',  true)      % alto indicador = más importante
+            %   ld.colorBy(c, indicador, 'clim', [0 100])          % límites fijos
+            %   ld.colorBy(c, indicador, 'label', 'IAE')           % etiqueta del colorbar
+            %   ld.colorBy(c, colores_rgb)                         % matriz nind x 3: color por punto
+            %   ld.colorBy(c, [r g b])                             % vector 1x3: color único para todos
 
             idx = obj.getConceptIndex(concept);
 
             if obj.isSingleRGB(input)
-                % CASO 3: color RGB único [r g b] -> aplicar a todos los puntos
+                % CASO 3: color RGB único -> orden de trazado sin importancia
                 colores = repmat(input(:)', concept.nind, 1);
+                obj.sortOrder{idx} = (1:concept.nind)';
+                obj.hideColorbar(idx);
 
             elseif obj.isRGBMatrix(input, concept.nind)
-                % CASO 2: matriz RGB nind x 3 -> color por punto
+                % CASO 2: matriz RGB nind x 3 -> orden de trazado sin importancia
                 colores = input;
+                obj.sortOrder{idx} = (1:concept.nind)';
+                obj.hideColorbar(idx);
 
             elseif isvector(input) && numel(input) == concept.nind
-                % CASO 1: indicador escalar nind x 1 -> mapear a colormap
-                colores = obj.indicatorToColors(input, varargin{:});
+                % CASO 1: indicador escalar -> ordenar según importancia
+                p = inputParser();
+                p.addParameter('colormap',    obj.DEFAULT_COLORMAP);
+                p.addParameter('reverseColor', false);  % invierte colores del mapa
+                p.addParameter('reverseInd',   false);  % true: alto=mejor=encima
+                p.addParameter('clim',         []);
+                p.addParameter('label',        '');
+                p.parse(varargin{:});
+
+                % Pasar reverseColor a indicatorToColors (renombrado de 'reverse')
+                colores = obj.indicatorToColors(input, ...
+                    'colormap', p.Results.colormap, ...
+                    'reverse',  p.Results.reverseColor, ...
+                    'clim',     p.Results.clim);
+
+                % Por defecto bajo=mejor=encima ('descend'); reverseInd invierte
+                if p.Results.reverseInd
+                    [~, obj.sortOrder{idx}] = sort(input(:), 'ascend');
+                else
+                    [~, obj.sortOrder{idx}] = sort(input(:), 'descend');
+                end
+
+                climVals = p.Results.clim;
+                if isempty(climVals)
+                    climVals = [min(input), max(input)];
+                end
+                obj.updateColorbar(idx, climVals, p.Results.colormap, ...
+                    p.Results.reverseColor, p.Results.label);
 
             else
                 error('LevelDiagram:colorBy:invalidInput', ...
@@ -589,15 +638,15 @@ classdef LevelDiagram < handle
                 pfRows = 2; pfCols = ceil(pfdim / 2);
             end
 
+            tl = tiledlayout(obj.figObjectives, pfRows, pfCols, ...
+                'TileSpacing', 'compact', 'Padding', 'compact');
+            tl.OuterPosition = [0, 0, 1, 1 - checkH];
+
             obj.axesObjectives    = cell(1, pfdim);
             obj.scatterObjectives = cell(nConcepts, pfdim);
 
             for j = 1:pfdim
-                obj.axesObjectives{j} = subplot(pfRows, pfCols, j);
-                axPos    = get(obj.axesObjectives{j}, 'Position');
-                axPos(2) = axPos(2) * (1 - checkH);
-                axPos(4) = axPos(4) * (1 - checkH);
-                set(obj.axesObjectives{j}, 'Position', axPos);
+                obj.axesObjectives{j} = nexttile(tl);
                 hold(obj.axesObjectives{j}, 'on');
                 grid(obj.axesObjectives{j}, 'on');
                 xlabel(obj.axesObjectives{j}, obj.concepts{1}.labels.objectives{j});
@@ -641,11 +690,32 @@ classdef LevelDiagram < handle
                 nRows = 2;
                 nCols = ceil(psdim / 2);
             end
+
+            cbH = 0.10;  % fracción reservada para colorbar en la parte superior
+            tl = tiledlayout(fig, nRows, nCols, ...
+                'TileSpacing', 'compact', 'Padding', 'compact');
+            tl.OuterPosition = [0, 0, 1, 1 - cbH];
+
+            % Axes de referencia invisible para el colorbar (en la franja superior)
+            refAx = axes(fig, 'Units', 'normalized', ...
+                'Position', [0.05, 1 - cbH + 0.01, 0.9, 0.001], ...
+                'Visible',  'off', ...
+                'XDir',     'normal');
+            obj.colorbarRefAxes{conceptIdx} = refAx;
+
+            % Colorbar horizontal oculto hasta que se llame colorBy con indicador
+            cb = colorbar(refAx, 'Location', 'south', ...
+                'Units',     'normalized', ...
+                'Position',  [0.05, 1 - cbH + 0.02, 0.9, 0.04], ...
+                'Direction', 'normal', ...
+                'Visible',   'off');
+            obj.colorbarHandles{conceptIdx} = cb;
+
             axesPar = cell(1, psdim);
             scatPar = cell(1, psdim);
 
             for j = 1:psdim
-                axesPar{j} = subplot(nRows, nCols, j);
+                axesPar{j} = nexttile(tl);
                 hold(axesPar{j}, 'on');
                 grid(axesPar{j}, 'on');
                 xlabel(axesPar{j}, c.labels.parameters{j});
@@ -989,7 +1059,7 @@ classdef LevelDiagram < handle
                 obj.panelTables{ci}.ColumnName = obj.buildPanelColumns(ci);
             end
         end
-        function executeCallbacks(obj, conceptIdx, ptIdx)
+        function executeCallbacks(obj, conceptIdx, ptIdx, selIdx, nTotal)
             % Ejecuta los callbacks de usuario con los datos del punto
             if isempty(obj.callbacks)
                 return;
@@ -999,12 +1069,14 @@ classdef LevelDiagram < handle
             sync = obj.syncValues{conceptIdx};
 
             % Construir estructura del punto
-            punto.concept    = c.name;
-            punto.index      = ptIdx;
-            punto.objectives = c.objectives(ptIdx,:);
-            punto.parameters = c.parameters(ptIdx,:);
-            punto.sync       = sync(ptIdx);
-            punto.labels     = c.labels;
+            punto.concept       = c.name;
+            punto.index         = ptIdx;
+            punto.objectives    = c.objectives(ptIdx,:);
+            punto.parameters    = c.parameters(ptIdx,:);
+            punto.sync          = sync(ptIdx);
+            punto.labels        = c.labels;
+            punto.selectionIdx  = selIdx;    % posición dentro de la selección actual
+            punto.selectionSize = nTotal;    % total de puntos seleccionados
 
             % Ejecutar solo los callbacks asociados a este concepto
             for i = 1:numel(obj.callbacks)
@@ -1038,8 +1110,9 @@ classdef LevelDiagram < handle
                 warndlg(sprintf('No hay callbacks para "%s". Use ld.onSelect(c, @func).', obj.concepts{conceptIdx}.name), 'Aviso');
                 return;
             end
-            for k = 1:numel(indices)
-                obj.executeCallbacks(conceptIdx, indices(k));
+            nTotal = numel(indices);
+            for k = 1:nTotal
+                obj.executeCallbacks(conceptIdx, indices(k), k, nTotal);
             end
         end
 
@@ -1140,7 +1213,8 @@ classdef LevelDiagram < handle
 
         function onConceptVisibility(obj, src, conceptIdx)
             % Callback del checkbox: muestra/oculta un concepto
-            visible = src.Value;  % 1 = visible, 0 = oculto
+            visible = logical(src.Value);  % 1 = visible, 0 = oculto
+            obj.conceptVisible(conceptIdx) = visible;
 
             % Mostrar/ocultar en figura de objetivos
             for j = 1:numel(obj.axesObjectives)
@@ -1338,12 +1412,22 @@ classdef LevelDiagram < handle
         end
 
         function selectByZone(obj, xLim, yLim, conceptIdx, ax)
-            % Selecciona puntos de TODOS los conceptos dentro de la zona
+            % Selecciona puntos dentro de la zona.
+            % Si conceptIdx > 0 (figura de parámetros), solo busca en ese concepto.
+            % Si conceptIdx == 0 (figura de objetivos), busca en todos los visibles.
             xLabel = get(get(ax, 'XLabel'), 'String');
+
+            % Determinar qué conceptos explorar
+            if conceptIdx > 0
+                ciList = conceptIdx;
+            else
+                ciList = 1:numel(obj.concepts);
+            end
 
             % Buscar puntos en la zona para cada concepto
             found = struct('conceptIdx', {}, 'indices', {});
-            for ci = 1:numel(obj.concepts)
+            for ci = ciList
+                if ci <= numel(obj.conceptVisible) && ~obj.conceptVisible(ci); continue; end
                 c     = obj.concepts{ci};
                 sync  = obj.syncValues{ci};
                 xData = obj.getDataByLabel(c, xLabel);
@@ -1422,13 +1506,21 @@ classdef LevelDiagram < handle
             % Umbral: si el punto más cercano está a más del 5% del rango -> zona vacía
             THRESHOLD = 0.05;
 
-            % Buscar el punto más cercano en TODOS los conceptos visibles
+            % Determinar qué conceptos explorar
+            if conceptIdx > 0
+                ciList = conceptIdx;
+            else
+                ciList = 1:numel(obj.concepts);
+            end
+
+            % Buscar el punto más cercano en los conceptos relevantes
             bestDist   = inf;
             bestCi     = conceptIdx;
             bestPtIdx  = [];
             xLabel     = get(get(ax, 'XLabel'), 'String');
 
-            for ci = 1:numel(obj.concepts)
+            for ci = ciList
+                if ci <= numel(obj.conceptVisible) && ~obj.conceptVisible(ci); continue; end
                 c     = obj.concepts{ci};
                 sync  = obj.syncValues{ci};
                 xData = obj.getDataByLabel(c, xLabel);
@@ -1547,7 +1639,15 @@ classdef LevelDiagram < handle
             if isempty(obj.figObjectives)
                 return;
             end
+            % Concepto aún no dibujado (addConcept antes de draw para este concepto)
+            if conceptIdx > size(obj.scatterObjectives, 1)
+                return;
+            end
             sync = obj.syncValues{conceptIdx};
+            % Aplicar el mismo sortOrder que usa updateColors para mantener
+            % XData e YData sincronizados
+            ord  = obj.sortOrder{conceptIdx};
+            sync = sync(ord);
 
             for j = 1:numel(obj.axesObjectives)
                 if ~isempty(obj.scatterObjectives{conceptIdx,j})
@@ -1561,21 +1661,138 @@ classdef LevelDiagram < handle
             end
         end
 
+        function rescaleYAxes(obj)
+            % Recalcula y aplica los límites del eje Y a todos los ejes tras
+            % cambiar syncValues. linkaxes congela YLimMode='manual', por lo
+            % que es necesario actualizar YLim explícitamente.
+            if isempty(obj.syncValues); return; end
+
+            allSync = cell2mat(obj.syncValues(:));
+            if isempty(allSync); return; end
+
+            yMin = min(allSync);
+            yMax = max(allSync);
+            if yMin == yMax
+                yMin = yMin - 0.5;
+                yMax = yMax + 0.5;
+            end
+            margin = 0.05 * (yMax - yMin);
+            newLim = [yMin - margin, yMax + margin];
+
+            % Aplicar a ejes de objetivos
+            for j = 1:numel(obj.axesObjectives)
+                ax = obj.axesObjectives{j};
+                if ~isempty(ax) && isvalid(ax)
+                    ax.YLim = newLim;
+                end
+            end
+
+            % Aplicar a ejes de parámetros de cada concepto
+            for ci = 1:numel(obj.scatterParameters)
+                for j = 1:numel(obj.scatterParameters{ci})
+                    sc = obj.scatterParameters{ci}{j};
+                    if ~isempty(sc) && isvalid(sc)
+                        sc.Parent.YLim = newLim;
+                    end
+                end
+            end
+        end
+
         function updateColors(obj, conceptIdx)
-            % Actualiza los colores de un concepto en todas sus figuras
+            % Actualiza colores y orden de trazado de un concepto en todas sus figuras
             if isempty(obj.figObjectives)
                 return;
             end
-            col = obj.colorData{conceptIdx};
+            ord  = obj.sortOrder{conceptIdx};
+            col  = obj.colorData{conceptIdx};
+            sz   = obj.buildSizeVector(conceptIdx);
+            sync = obj.syncValues{conceptIdx};
+            c    = obj.concepts{conceptIdx};
+
+            % Reordenar todos los datos según sortOrder para controlar z-order
+            % col(ord,:) asegura que cada punto mantiene su color correcto
+            % aunque se dibuje en una posición diferente del array
+            if size(col, 1) > 1
+                col  = col(ord, :);
+            end
+            sz   = sz(ord);
+            sync = sync(ord);
+
             for j = 1:numel(obj.axesObjectives)
-                if ~isempty(obj.scatterObjectives{conceptIdx, j})
-                    obj.scatterObjectives{conceptIdx,j}.CData = col;
+                sc = obj.scatterObjectives{conceptIdx, j};
+                if ~isempty(sc)
+                    sc.XData             = c.objectives(ord, j);
+                    sc.YData             = sync;
+                    sc.CData             = col;
+                    sc.SizeData          = sz;
+                    sc.MarkerFaceColor   = 'flat';
                 end
             end
             if conceptIdx <= numel(obj.scatterParameters)
                 for j = 1:numel(obj.scatterParameters{conceptIdx})
-                    obj.scatterParameters{conceptIdx}{j}.CData = col;
+                    sc = obj.scatterParameters{conceptIdx}{j};
+                    if ~isempty(sc)
+                        sc.XData           = c.parameters(ord, j);
+                        sc.YData           = sync;
+                        sc.CData           = col;
+                        sc.SizeData        = sz;
+                        sc.MarkerFaceColor = 'flat';
+                    end
                 end
+            end
+        end
+
+        function updateColorbar(obj, conceptIdx, climVals, cmapName, reverseColor, label)
+            % Muestra y actualiza el colorbar horizontal en la figura de parámetros
+            cb    = obj.colorbarHandles{conceptIdx};
+            refAx = obj.colorbarRefAxes{conceptIdx};
+            if isempty(cb) || ~isvalid(cb) || isempty(refAx) || ~isvalid(refAx)
+                return;
+            end
+            if ischar(cmapName)
+                cmap = feval(cmapName, 256);
+            else
+                cmap = cmapName;
+            end
+            if reverseColor
+                cmap = flipud(cmap);
+            end
+            colormap(refAx, cmap);
+            clim(refAx, climVals);
+            cb.Direction = 'normal';
+
+            cbPos = cb.Position;  % [x y w h] normalizados
+
+            % Eliminar etiqueta anterior si existe
+            lh = obj.colorbarLabels{conceptIdx};
+            if ~isempty(lh) && isvalid(lh)
+                delete(lh);
+            end
+            obj.colorbarLabels{conceptIdx} = [];
+
+            if ~isempty(label)
+                fig = obj.figsParameters{conceptIdx};
+                obj.colorbarLabels{conceptIdx} = annotation(fig, 'textbox', ...
+                    'Units',              'normalized', ...
+                    'Position',           [0.01, cbPos(2)-cbPos(4)*0.5, 0.14, cbPos(4)*2], ...
+                    'String',             label, ...
+                    'FontWeight',         'bold', ...
+                    'EdgeColor',          'none', ...
+                    'HorizontalAlignment','right', ...
+                    'VerticalAlignment',  'middle');
+                cb.Position = [0.17, cbPos(2), 0.80, cbPos(4)];
+            else
+                cb.Position = [0.05, cbPos(2), 0.92, cbPos(4)];
+            end
+            cb.Visible = 'on';
+        end
+
+        function hideColorbar(obj, conceptIdx)
+            % Oculta el colorbar de un concepto
+            if conceptIdx > numel(obj.colorbarHandles); return; end
+            cb = obj.colorbarHandles{conceptIdx};
+            if ~isempty(cb) && isvalid(cb)
+                cb.Visible = 'off';
             end
         end
 
@@ -1636,6 +1853,7 @@ classdef LevelDiagram < handle
                     obj.concepts{i}.objectives, obj.globalBounds, obj.globalNorm);
                 obj.updateYAxis(i);
             end
+            obj.rescaleYAxes();
         end
 
         function sync = computeNorm(~, objectives, bounds, p)
