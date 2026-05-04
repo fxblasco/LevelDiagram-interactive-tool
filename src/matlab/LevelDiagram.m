@@ -217,6 +217,11 @@ classdef LevelDiagram < handle
 
             % Recalcular bounds globales y sync de TODOS los conceptos
             obj.recalcGlobalBoundsAndSync();
+
+            % Si el LD ya estaba dibujado, actualizar las figuras existentes
+            if ~isempty(obj.figObjectives) && isvalid(obj.figObjectives)
+                obj.addConceptToFigures(nC);
+            end
         end
 
         function removeConcept(obj, concept)
@@ -759,10 +764,12 @@ classdef LevelDiagram < handle
             mk    = obj.markerData{conceptIdx};
             psdim = c.psdim;
 
-            fig = figure('Name', ...
-                sprintf('Parameters - %s', c.name), ...
-                'NumberTitle', 'off', ...
-                'Position',    pos);
+            figArgs = {'Name', sprintf('Parameters - %s', c.name), ...
+                       'NumberTitle', 'off'};
+            if nargin >= 3 && ~isempty(pos)
+                figArgs = [figArgs, {'Position', pos}];
+            end
+            fig = figure(figArgs{:});
             obj.figsParameters{conceptIdx} = fig;
 
             if psdim <= 6
@@ -847,6 +854,45 @@ classdef LevelDiagram < handle
                     'ForegroundColor', obj.contrastColor(bgColor), ...
                     'Callback',        @(src,~) obj.onConceptVisibility(src, i));
             end
+        end
+
+        function addConceptToFigures(obj, conceptIdx)
+            % Añade un nuevo concepto a las figuras ya creadas por draw().
+            % Llamado por addConcept() cuando el LD ya está dibujado.
+            pfdim = numel(obj.axesObjectives);
+
+            % 1) Añadir scatter en la figura de objetivos (una fila nueva)
+            if size(obj.scatterObjectives, 1) < conceptIdx
+                obj.scatterObjectives{conceptIdx, pfdim} = [];  % expande
+            end
+            c    = obj.concepts{conceptIdx};
+            sync = obj.syncValues{conceptIdx};
+            col  = obj.colorData{conceptIdx};
+            sz   = obj.sizeData{conceptIdx};
+            mk   = obj.markerData{conceptIdx};
+            for j = 1:pfdim
+                obj.scatterObjectives{conceptIdx, j} = scatter(...
+                    obj.axesObjectives{j}, ...
+                    c.objectives(:, j), sync, sz, col, mk, ...
+                    'MarkerFaceColor', 'flat');
+            end
+
+            % 2) Crear figura de parámetros (posición automática)
+            obj.createParametersFigure(conceptIdx);
+
+            % 3) Enlazar ejes Y de la nueva figura con los ya existentes
+            allParAxes = {};
+            for ci = 1:numel(obj.axesParameters)
+                allParAxes = [allParAxes, obj.axesParameters{ci}(:)']; %#ok<AGROW>
+            end
+            linkaxes([obj.axesObjectives{:}, allParAxes{:}], 'y');
+
+            % 4) Aplicar orden/color/tamaño al scatter recién creado
+            obj.updateColors(conceptIdx);
+
+            % 5) Reconstruir checkboxes y panel de información
+            obj.rebuildCheckboxes();
+            obj.rebuildInfoPanel();
         end
 
         function rebuildInfoPanel(obj)
