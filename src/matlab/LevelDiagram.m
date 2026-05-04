@@ -319,6 +319,10 @@ classdef LevelDiagram < handle
 
             obj.globalNorm = p;
 
+            % Sync has changed: reset label to default and refresh axes/panel
+            obj.syncLabel = 'f_{sync}';
+            obj.updateSyncLabels();
+
             % Recalcular sync para todos los conceptos
             for i = 1:numel(obj.concepts)
                 obj.syncValues{i} = obj.computeNorm(...
@@ -369,6 +373,10 @@ classdef LevelDiagram < handle
                     'Expected %d vectors (one per concept), but %d were provided.', ...
                     nC, numel(values));
             end
+
+            % Sync has changed: reset label to default and refresh axes/panel
+            obj.syncLabel = 'f_{sync}';
+            obj.updateSyncLabels();
 
             for i = 1:nC
                 obj.validateSyncValues(values{i}, obj.concepts{i}.nind);
@@ -1226,7 +1234,7 @@ classdef LevelDiagram < handle
             fullPath = fullfile(path, file);
             c        = obj.concepts{conceptIdx};
             sync     = obj.syncValues{conceptIdx};
-            headers  = [{'Index'}, c.labels.objectives, c.labels.parameters, {'f_sync'}];
+            headers  = [{'Index'}, c.labels.objectives, c.labels.parameters, {obj.syncLabel}];
             data     = [num2cell(indices(:)), ...
                         num2cell(c.objectives(indices,:)), ...
                         num2cell(c.parameters(indices,:)), ...
@@ -1723,7 +1731,7 @@ classdef LevelDiagram < handle
         end
         %% Actualización de propiedades gráficas
         function updateSyncLabels(obj)
-            % Actualiza la etiqueta del eje Y en todas las figuras
+            % Actualiza la etiqueta del eje Y en todas las figuras y en el panel de info
             for j = 1:numel(obj.axesObjectives)
                 if ~isempty(obj.axesObjectives{j}) && isvalid(obj.axesObjectives{j})
                     ylabel(obj.axesObjectives{j}, obj.syncLabel);
@@ -1734,6 +1742,12 @@ classdef LevelDiagram < handle
                     if ~isempty(obj.axesParameters{ci}{j}) && isvalid(obj.axesParameters{ci}{j})
                         ylabel(obj.axesParameters{ci}{j}, obj.syncLabel);
                     end
+                end
+            end
+            % Actualizar cabeceras del panel de información
+            for ci = 1:numel(obj.panelTables)
+                if ~isempty(obj.panelTables{ci}) && isvalid(obj.panelTables{ci})
+                    obj.panelTables{ci}.ColumnName = obj.buildPanelColumns(ci);
                 end
             end
         end
