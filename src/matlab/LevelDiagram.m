@@ -122,29 +122,29 @@ classdef LevelDiagram < handle
 
             if isempty(concept.name)
                 error('LevelDiagram:addConcept:emptyName', ...
-                    'El concepto debe tener un nombre para añadirlo a un Level Diagram.');
+                    'The concept must have a name before it can be added to a Level Diagram.');
             end
 
             if obj.conceptExists(concept)
                 error('LevelDiagram:addConcept:duplicateConcept', ...
-                    'Ya existe un concepto con el nombre "%s" en este Level Diagram.', ...
+                    'A concept named "%s" already exists in this Level Diagram.', ...
                     concept.name);
             end
 
-            % Validar compatibilidad de objetivos con los conceptos ya añadidos
+            % Validate objective compatibility with already-added concepts
             if ~isempty(obj.concepts)
                 ref = obj.concepts{1};
 
-                % --- Error irrecuperable: distinto número de objetivos ---
+                % --- Hard error: different number of objectives ---
                 if concept.pfdim ~= ref.pfdim
                     error('LevelDiagram:addConcept:incompatibleObjectives', ...
-                        ['El concepto "%s" tiene %d objetivo(s), pero los conceptos ' ...
-                         'del Level Diagram tienen %d.\n' ...
-                         'Todos los conceptos deben tener el mismo número de objetivos.'], ...
+                        ['Concept "%s" has %d objective(s), but the Level Diagram ' ...
+                         'already contains concepts with %d.\n' ...
+                         'All concepts must have the same number of objectives.'], ...
                         concept.name, concept.pfdim, ref.pfdim);
                 end
 
-                % --- Advertencia recuperable: etiquetas distintas ---
+                % --- Recoverable warning: different labels ---
                 diffIdx = [];
                 for j = 1:ref.pfdim
                     if ~strcmp(concept.labels.objectives{j}, ref.labels.objectives{j})
@@ -153,39 +153,38 @@ classdef LevelDiagram < handle
                 end
 
                 if ~isempty(diffIdx)
-                    % Construir tabla de diferencias para el diálogo
+                    % Build difference table for the dialog
                     lines = cell(1, numel(diffIdx));
                     for k = 1:numel(diffIdx)
                         j = diffIdx(k);
-                        lines{k} = sprintf('  Obj %d:  "%s"  →  "%s"', ...
+                        lines{k} = sprintf('  Obj %d:  "%s"  ->  "%s"', ...
                             j, ref.labels.objectives{j}, concept.labels.objectives{j});
                     end
                     msg = sprintf( ...
-                        ['Las etiquetas de objetivos del concepto "%s" ' ...
-                         'difieren de las ya cargadas:\n\n%s\n\n' ...
-                         '¿Qué etiquetas desea usar para TODOS los conceptos?'], ...
+                        ['The objective labels of concept "%s" differ from those ' ...
+                         'already loaded:\n\n%s\n\n' ...
+                         'Which labels should be used for ALL concepts?'], ...
                         concept.name, strjoin(lines, '\n'));
 
-                    answer = questdlg(msg, 'Etiquetas de objetivos distintas', ...
-                        'Mantener actuales', 'Usar las nuevas', 'Cancelar', ...
-                        'Mantener actuales');
+                    answer = questdlg(msg, 'Objective label mismatch', ...
+                        'Keep current', 'Use new', 'Cancel', 'Keep current');
 
                     switch answer
-                        case 'Mantener actuales'
-                            % Actualizar etiquetas del concepto nuevo para que coincidan
+                        case 'Keep current'
+                            % Update the new concept's labels to match existing ones
                             newLbls = concept.labels;
                             newLbls.objectives = ref.labels.objectives;
                             concept.labels = newLbls;
 
-                        case 'Usar las nuevas'
-                            % Actualizar todos los conceptos existentes
+                        case 'Use new'
+                            % Update all existing concepts to use the new labels
                             chosenObj = concept.labels.objectives;
                             for k = 1:numel(obj.concepts)
                                 lbl = obj.concepts{k}.labels;
                                 lbl.objectives = chosenObj;
                                 obj.concepts{k}.labels = lbl;
                             end
-                            % Actualizar xlabel de los ejes si el LD ya está dibujado
+                            % Refresh xlabel on already-drawn objective axes
                             for j = 1:numel(obj.axesObjectives)
                                 ax = obj.axesObjectives{j};
                                 if ~isempty(ax) && isvalid(ax)
@@ -193,7 +192,7 @@ classdef LevelDiagram < handle
                                 end
                             end
 
-                        otherwise  % 'Cancelar' o cerrar diálogo
+                        otherwise  % 'Cancel' or dialog closed
                             return;
                     end
                 end
@@ -361,13 +360,13 @@ classdef LevelDiagram < handle
 
             if ~iscell(values)
                 error('LevelDiagram:syncBy:invalidInput', ...
-                    'syncBy requiere un cell array. Uso: ld.syncBy({QI_c1, QI_c2, ...})');
+                    'syncBy requires a cell array. Usage: ld.syncBy({QI_c1, QI_c2, ...})');
             end
 
             nC = numel(obj.concepts);
             if numel(values) ~= nC
                 error('LevelDiagram:syncBy:wrongSize', ...
-                    'Se esperan %d vectores (uno por concepto), se han pasado %d.', ...
+                    'Expected %d vectors (one per concept), but %d were provided.', ...
                     nC, numel(values));
             end
 
@@ -439,10 +438,10 @@ classdef LevelDiagram < handle
 
             else
                 error('LevelDiagram:colorBy:invalidInput', ...
-                    ['El input debe ser:\n' ...
-                     '  - vector de %d elementos (indicador)\n' ...
-                     '  - matriz %d x 3 (RGB por punto)\n' ...
-                     '  - vector [r g b] (color único)'], ...
+                    ['Input must be one of:\n' ...
+                     '  - a vector of %d elements (indicator)\n' ...
+                     '  - a %d x 3 matrix (RGB per point)\n' ...
+                     '  - a [r g b] vector (single color)'], ...
                     concept.nind, concept.nind);
             end
 
@@ -466,7 +465,7 @@ classdef LevelDiagram < handle
                 obj.sizeData{idx} = sizes(:);
             else
                 error('LevelDiagram:setSize:invalidInput', ...
-                    'sizes debe ser un escalar o un vector de %d elementos.', ...
+                    'sizes must be a scalar or a vector of %d elements.', ...
                     concept.nind);
             end
             obj.updateSizes(idx);
@@ -485,7 +484,7 @@ classdef LevelDiagram < handle
             validMarkers = {'o','s','^','v','>','<','p','h','d','+','*'};
             if ~ismember(marker, validMarkers)
                 error('LevelDiagram:setMarker:invalidMarker', ...
-                    'Marcador no válido. Opciones: %s', strjoin(validMarkers, ', '));
+                    'Invalid marker. Valid options: %s', strjoin(validMarkers, ', '));
             end
             idx = obj.getConceptIndex(concept);
             obj.markerData{idx} = marker;
@@ -510,7 +509,7 @@ classdef LevelDiagram < handle
 
             if ~isa(callback, 'function_handle')
                 error('LevelDiagram:onSelect:invalidCallback', ...
-                    'El callback debe ser un function handle.');
+                    'The callback must be a function handle.');
             end
             obj.validateConcept(concept);
             conceptIdx = obj.getConceptIndex(concept);
@@ -541,7 +540,7 @@ classdef LevelDiagram < handle
 
             if isempty(obj.concepts)
                 error('LevelDiagram:draw:noConcepts', ...
-                    'No hay conceptos añadidos al Level Diagram.');
+                    'No concepts have been added to the Level Diagram.');
             end
 
             % Calcular layout de figuras antes de crearlas
@@ -585,12 +584,12 @@ classdef LevelDiagram < handle
 
             if isempty(obj.selection)
                 error('LevelDiagram:exportSelection:noSelection', ...
-                    'No hay puntos seleccionados.');
+                    'No points are currently selected.');
             end
             indices = obj.getSelectionForConcept(conceptIdx);
             if isempty(indices)
                 error('LevelDiagram:exportSelection:noSelection', ...
-                    'No hay puntos seleccionados para este concepto.');
+                    'No points are selected for this concept.');
             end
             c      = obj.concepts{conceptIdx};
             subset = c.extractSubset(indices);
@@ -1160,7 +1159,7 @@ classdef LevelDiagram < handle
                         obj.callbacks{i}.func(punto);
                     catch e
                         warning('LevelDiagram:callbackError', ...
-                            'Error en callback %d: %s', i, e.message);
+                            'Error in callback %d: %s', i, e.message);
                     end
                 end
             end
@@ -1716,7 +1715,7 @@ classdef LevelDiagram < handle
                             obj.callbacks{j}.func(punto);
                         catch e
                             warning('LevelDiagram:callbackError', ...
-                                'Error en callback %d: %s', j, e.message);
+                                'Error in callback %d: %s', j, e.message);
                         end
                     end
                 end
@@ -2071,7 +2070,7 @@ classdef LevelDiagram < handle
                 end
             end
             error('LevelDiagram:conceptNotFound', ...
-                'El concepto "%s" no está en este Level Diagram.', concept.name);
+                'Concept "%s" was not found in this Level Diagram.', concept.name);
         end
 
         function tf = conceptExists(obj, concept)
@@ -2089,32 +2088,32 @@ classdef LevelDiagram < handle
         function validateName(~, name)
             if ~ischar(name) && ~isstring(name)
                 error('LevelDiagram:invalidName', ...
-                    'El nombre debe ser un string.');
+                    'The name must be a string.');
             end
         end
 
         function validateConcept(~, concept)
             if ~isa(concept, 'Concept')
                 error('LevelDiagram:invalidConcept', ...
-                    'El argumento debe ser un objeto Concept.');
+                    'The argument must be a Concept object.');
             end
         end
 
         function validateBounds(~, bounds, pfdim)
             if ~isnumeric(bounds) || size(bounds,1) ~= 2 || size(bounds,2) ~= pfdim
                 error('LevelDiagram:invalidBounds', ...
-                    'bounds debe ser una matriz 2 x %d [maximos; minimos].', pfdim);
+                    'bounds must be a 2 x %d matrix [maxima; minima].', pfdim);
             end
             if any(bounds(1,:) <= bounds(2,:))
                 error('LevelDiagram:invalidBounds', ...
-                    'bounds(1,:) debe ser mayor que bounds(2,:) en todas las dimensiones.');
+                    'bounds(1,:) must be greater than bounds(2,:) in every dimension.');
             end
         end
 
         function validateSyncValues(~, values, nind)
             if ~isnumeric(values) || ~isvector(values) || numel(values) ~= nind
                 error('LevelDiagram:invalidSyncValues', ...
-                    'syncValues debe ser un vector numérico de %d elementos.', nind);
+                    'syncValues must be a numeric vector of %d elements.', nind);
             end
         end
     end
