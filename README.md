@@ -7,11 +7,16 @@ Pareto fronts using the **Level Diagram** technique.
 
 - Encapsulate any Pareto front + Pareto set in a `Concept` object
 - Compare multiple concepts (e.g. PID vs GPC vs MPC) on shared normalized axes
+- `addConcept` validates objective count and labels; label mismatches trigger an interactive dialog
+- Adding a concept after `draw()` updates all figures automatically — no redraw needed
 - Interactive point selection: click, rectangular drag, Shift for multi-selection
 - Customizable colors (per-point colormap or RGB), sizes, and markers
 - Synchronized Y-axis (`f_sync`) based on p-norm (1, 2, ∞) or any external indicator
+- `syncBy` / `syncByNorm` reset the Y-axis label; use `setSyncLabel` to assign a descriptive name
+- Y-axis label propagates to the Info Panel column header and CSV exports
+- Concept visibility toggle (checkbox) hides the concept from all figures including the Info Panel
 - Export selection to workspace or CSV
-- Register callbacks triggered on point selection
+- Register callbacks triggered on point selection; `punto` struct includes `selectionIdx` and `selectionSize`
 
 ## Project structure
 

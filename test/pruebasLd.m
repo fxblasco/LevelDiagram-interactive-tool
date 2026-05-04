@@ -1,24 +1,24 @@
 %% Test 1: Crear conceptos
-pf1 = rand(50, 2) * 100;
+pf1 = rand(50, 4) * 100;
 ps1 = rand(50, 3);
-pf2 = rand(40, 2) * 100;
+pf2 = rand(40, 4) * 100;
 ps2 = rand(40, 2);
-pf3 = rand(45, 2) * 100;
+pf3 = rand(45, 4) * 100;
 ps3 = rand(45, 4);
 
-c1 = Concept(pf1, ps1, 'PID');c1.labels.objectives = {'IAE', 'TV'};
+c1 = Concept(pf1, ps1, 'PID');c1.labels.objectives = {'IAE1', 'TV1','IAE2','TV2'};
 c1.labels.parameters = {'Kp', 'Ti', 'Td'};
 
 
 c2 = Concept(pf2, ps2, 'GPC');
-c2.labels.objectives = {'IAE', 'TV'};
+c2.labels.objectives = {'IAE', 'TV','IAE','kk'};
 c2.labels.parameters = {'N', 'Nu'};
 
 c3 = Concept(pf3, ps3, 'MPC');
-c3.labels.objectives = {'IAE', 'TV'};
+%c3.labels.objectives = {'IAE', 'TV','IAE2', 'TV3'};
 c3.labels.parameters = {'Np', 'Nc', 'Q', 'R'};
 
-disp(c1); disp(c2); disp(c3)
+%disp(c1); disp(c2); disp(c3)
 
 %% Test 2: Crear Level Diagram - addConcept sin bounds
 % Los bounds globales se calculan automáticamente
@@ -27,6 +27,7 @@ ld = LevelDiagram('ld1');
 ld.addConcept(c1);   % bounds = c1.autoBounds, norma 2
 ld.addConcept(c2);   % bounds = merge(c1,c2),  recalcula c1 y c2
 ld.addConcept(c3);   % bounds = merge(c1,c2,c3), recalcula todos
+ld.setSyncLabel('Norma 2');
 disp(ld)
 
 %% Test 3: Dibujar
@@ -39,7 +40,7 @@ ld.setSyncLabel('f_{sync}');  % restaurar por defecto
 %% Test 4: Marcadores
 ld.setMarker(c1, 'o');
 ld.setMarker(c2, 's');
-ld.setMarker(c3, '^');
+ld.setMarker(c3, '*');
 
 %% Test 5: Colorear
 ld.colorBy(c1, pf1(:,1));
@@ -50,13 +51,14 @@ ld.colorBy(c1, [1 0.5 0.1]);  % color único naranja
 %% Test 6: Cambiar sincronización
 % Norma p para TODOS los conceptos (bounds globales automáticos)
 ld.syncByNorm(1);        % norma 1 para todos
+ld.setSyncLabel('Norma 1');
 ld.syncByNorm(inf);      % norma infinito para todos
 ld.setSyncLabel('Norma \infty');
 ld.syncByNorm(2);        % volver a norma 2
 ld.setSyncLabel('Norma 2');
 
 % Con bounds personalizados
-myBounds = [120 20; 5 1];
+myBounds = [120 20 120 20 ; 5 1 5 1];
 ld.syncByNorm(2, myBounds);
 ld.setSyncLabel('Norma 2 (bounds custom)');
 % para ver bounds y norma actuales:
@@ -87,9 +89,9 @@ ld.clearCallbacks(c1);         % eliminar callback de c1
 % disp(subset1); disp(subset2)
 
 %% Test 9: Tamaños
-ld.setSize(c1, 50)
-ld.setSize(c2, linspace(20, 100, c2.nind)')
-tamanios = 20 + 80*(pf3(:,1)-min(pf3(:,1)))/(max(pf3(:,1))-min(pf3(:,1)));
+ld.setSize(c1, 80)
+ld.setSize(c2, linspace(20, 200, c2.nind)')
+tamanios = 20 + 250*(pf3(:,1)-min(pf3(:,1)))/(max(pf3(:,1))-min(pf3(:,1)));
 ld.setSize(c3, tamanios)
 
 %% Test 10: Eliminar un concepto

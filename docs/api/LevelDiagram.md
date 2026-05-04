@@ -60,20 +60,38 @@ ld.addConcept(concept)
 
 Adds a `Concept` to the diagram. Global bounds and the synchronisation values of **all** existing concepts are recomputed automatically with the current norm.
 
+If `draw()` has already been called, the new concept is added to the existing figures immediately: a new scatter series appears in the Objectives figure, a new Parameters figure is opened, and the Info Panel and checkboxes are rebuilt.
+
 **Arguments**
 
 | Name | Type | Description |
 |---|---|---|
 | `concept` | `Concept` | Object with a non-empty, unique `name` |
 
-!!! note
-    Call `draw()` after adding all concepts. Adding a concept after `draw()` requires calling `draw()` again or updating the axes manually.
+**Validation**
+
+When a second or later concept is added, the following checks are applied against the first concept already in the diagram:
+
+| Check | Behaviour on failure |
+|---|---|
+| Same number of objectives (`pfdim`) | Hard error — concept is not added |
+| Same objective labels (position by position) | Interactive `questdlg` with three options |
+
+Label-mismatch dialog options:
+
+| Option | Effect |
+|---|---|
+| **Keep current** | New concept's labels are updated to match the existing ones |
+| **Use new** | All existing concepts' labels (and axis titles) are updated to the new ones |
+| **Cancel** | Concept is not added; diagram is unchanged |
 
 **Example**
 
 ```matlab
 ld.addConcept(c1);
 ld.addConcept(c2);   % globalBounds now covers both c1 and c2
+ld.draw();
+ld.addConcept(c3);   % figures update automatically — no need to call draw() again
 ```
 
 ---
@@ -99,6 +117,9 @@ ld.syncByNorm(p, bounds)
 
 Recomputes the sync axis for **all** concepts using the Lp norm. Normalisation is performed to `[0, 1]` using `globalBounds` before applying the norm.
 
+!!! note
+    Calling `syncByNorm` resets `syncLabel` to `'f_{sync}'` and refreshes all Y-axis labels and the Info Panel column header. Call `setSyncLabel` afterwards to set a descriptive label.
+
 **Arguments**
 
 | Name | Type | Description |
@@ -109,9 +130,9 @@ Recomputes the sync axis for **all** concepts using the Lp norm. Normalisation i
 **Example**
 
 ```matlab
-ld.syncByNorm(2);          % L2 norm (default after addConcept)
-ld.syncByNorm(1);          % L1 norm
-ld.syncByNorm(Inf);        % Chebyshev norm
+ld.syncByNorm(2);                    % L2 norm (default after addConcept)
+ld.syncByNorm(1);  ld.setSyncLabel('L1 norm');
+ld.syncByNorm(Inf); ld.setSyncLabel('Chebyshev norm');
 ld.syncByNorm(2, myBounds);
 ```
 
@@ -124,6 +145,9 @@ ld.syncBy(values)
 ```
 
 Sets the Y-axis from an external quality indicator instead of a norm. Useful with [`composedNorm`](utilities.md#composednorm) or any user-defined indicator.
+
+!!! note
+    Calling `syncBy` resets `syncLabel` to `'f_{sync}'` and refreshes all Y-axis labels and the Info Panel column header. Call `setSyncLabel` afterwards to set a descriptive label.
 
 **Arguments**
 
@@ -157,11 +181,18 @@ Resets `globalBounds` to the automatic values (max of all `maxpf`, min of all `m
 ld.setSyncLabel(label)
 ```
 
-Changes the Y-axis label in all open figures. Equivalent to setting `ld.syncLabel = label` directly.
+Changes the Y-axis label in all open figures, in the last column header of the Info Panel, and in CSV exports. Equivalent to setting `ld.syncLabel = label` directly.
+
+This is the intended way to assign a descriptive label after calling `syncBy` or `syncByNorm`, both of which reset the label to `'f_{sync}'`.
 
 **Example**
 
 ```matlab
+ld.syncByNorm(1);
+ld.setSyncLabel('L1 norm');
+
+[dn, ~] = composedNorm(c1.objectives, pref, ld.globalBounds);
+ld.syncBy({dn});
 ld.setSyncLabel('Composed norm');
 ```
 

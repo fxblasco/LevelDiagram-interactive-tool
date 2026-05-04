@@ -36,12 +36,16 @@ ld.onSelect(c1, @myCallback);    % callback on point click
 |---|---|
 | `Concept` | Encapsulates any Pareto front + Pareto set |
 | Multiple concepts | Compare PID vs GPC vs MPC on shared normalised axes |
+| Concept validation | `addConcept` checks objective count and labels; label mismatches show an interactive dialog |
+| Live figure update | Adding a concept after `draw()` updates all figures automatically |
+| Concept visibility | Checkbox in the Objectives figure hides a concept from all figures and the Info Panel |
 | Interactive selection | Click a point, drag a rectangle, Shift for multi-selection |
 | Colour / size / marker | Per-point colormap, RGB matrix, or fixed colour |
 | Y-axis sync | p-norm (1, 2, ∞) or any external quality indicator |
+| Sync label | `setSyncLabel` propagates to axes, Info Panel column header, and CSV exports |
 | Preference bands | Overlay staircase sectors from a preference table |
 | Export | Selection → new `Concept`, workspace variable, or CSV |
-| Callbacks | Function triggered on each selected point |
+| Callbacks | Function triggered on each selected point; `punto` includes `selectionIdx` and `selectionSize` |
 
 ## Requirements
 
