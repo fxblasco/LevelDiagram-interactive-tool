@@ -1223,13 +1223,14 @@ classdef LevelDiagram < handle
             visible = logical(src.Value);  % 1 = visible, 0 = oculto
             obj.conceptVisible(conceptIdx) = visible;
 
-            % Mostrar/ocultar en figura de objetivos
+            % Mostrar/ocultar scatter en figura de objetivos
             for j = 1:numel(obj.axesObjectives)
-                if ~isempty(obj.scatterObjectives{conceptIdx, j})
+                sc = obj.scatterObjectives{conceptIdx, j};
+                if ~isempty(sc) && isvalid(sc)
                     if visible
-                        obj.scatterObjectives{conceptIdx,j}.Visible = 'on';
+                        sc.Visible = 'on';
                     else
-                        obj.scatterObjectives{conceptIdx,j}.Visible = 'off';
+                        sc.Visible = 'off';
                     end
                 end
             end
@@ -1355,26 +1356,17 @@ classdef LevelDiagram < handle
                 obj.dragRect = [];
             end
 
-            % Si es figura de objetivos (conceptIdx==0) identificar
-            % el concepto más cercano al click en tiempo de ejecución
-            if conceptIdx == 0
-                conceptIdx = obj.getConceptIndexFromAxes(ax);
-            end
-            if isempty(conceptIdx)
-                obj.isDragging = false;
-                obj.dragStart  = [];
-                return;
-            end
-
             if obj.isDragging
-                % SELECCIÓN POR ZONA
+                % SELECCIÓN POR ZONA: en figura de objetivos (conceptIdx==0)
+                % busca en todos los conceptos visibles; en figura de
+                % parámetros (conceptIdx>0) solo en ese concepto.
                 pos    = get(ax, 'CurrentPoint');
                 endPos = [pos(1,1), pos(1,2)];
                 xLim   = sort([obj.dragStart(1), endPos(1)]);
                 yLim   = sort([obj.dragStart(2), endPos(2)]);
                 obj.selectByZone(xLim, yLim, conceptIdx, ax);
             else
-                % CLICK SIMPLE
+                % CLICK SIMPLE: igual, conceptIdx==0 busca en todos
                 obj.selectByClick(ax, conceptIdx);
             end
 
