@@ -131,6 +131,31 @@ classdef LevelDiagram < handle
                     concept.name);
             end
 
+            % Validar compatibilidad de objetivos con los conceptos ya añadidos
+            if ~isempty(obj.concepts)
+                ref = obj.concepts{1};
+                % Mismo número de objetivos
+                if concept.pfdim ~= ref.pfdim
+                    error('LevelDiagram:addConcept:incompatibleObjectives', ...
+                        ['El concepto "%s" tiene %d objetivo(s), pero los conceptos ' ...
+                         'del Level Diagram tienen %d.\n' ...
+                         'Todos los conceptos deben tener el mismo número de objetivos.'], ...
+                        concept.name, concept.pfdim, ref.pfdim);
+                end
+                % Mismas etiquetas de objetivos
+                for j = 1:ref.pfdim
+                    labelNew = concept.labels.objectives{j};
+                    labelRef = ref.labels.objectives{j};
+                    if ~strcmp(labelNew, labelRef)
+                        error('LevelDiagram:addConcept:incompatibleLabels', ...
+                            ['La etiqueta del objetivo %d del concepto "%s" es "%s", ' ...
+                             'pero se esperaba "%s" (igual que en "%s").\n' ...
+                             'Todos los conceptos deben tener las mismas etiquetas de objetivos.'], ...
+                            j, concept.name, labelNew, labelRef, ref.name);
+                    end
+                end
+            end
+
             % Añadir concepto con sync provisional (se recalcula abajo)
             obj.concepts{end+1}   = concept;
             obj.syncValues{end+1} = zeros(concept.nind, 1);
