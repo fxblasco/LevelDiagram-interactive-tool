@@ -490,6 +490,13 @@ classdef LevelDiagram < handle
 
             % Crear panel de información
             obj.createInfoPanel(positions{end});
+
+            % Aplicar sortOrder, colores y tamaños actuales a los scatter
+            % recién creados (draw() dibuja en orden original; updateColors
+            % reordena XData e YData de forma consistente)
+            for i = 1:numel(obj.concepts)
+                obj.updateColors(i);
+            end
         end
 
         %% Exportación
