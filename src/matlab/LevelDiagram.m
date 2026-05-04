@@ -134,7 +134,8 @@ classdef LevelDiagram < handle
             % Validar compatibilidad de objetivos con los conceptos ya añadidos
             if ~isempty(obj.concepts)
                 ref = obj.concepts{1};
-                % Mismo número de objetivos
+
+                % --- Error irrecuperable: distinto número de objetivos ---
                 if concept.pfdim ~= ref.pfdim
                     error('LevelDiagram:addConcept:incompatibleObjectives', ...
                         ['El concepto "%s" tiene %d objetivo(s), pero los conceptos ' ...
@@ -142,16 +143,58 @@ classdef LevelDiagram < handle
                          'Todos los conceptos deben tener el mismo número de objetivos.'], ...
                         concept.name, concept.pfdim, ref.pfdim);
                 end
-                % Mismas etiquetas de objetivos
+
+                % --- Advertencia recuperable: etiquetas distintas ---
+                diffIdx = [];
                 for j = 1:ref.pfdim
-                    labelNew = concept.labels.objectives{j};
-                    labelRef = ref.labels.objectives{j};
-                    if ~strcmp(labelNew, labelRef)
-                        error('LevelDiagram:addConcept:incompatibleLabels', ...
-                            ['La etiqueta del objetivo %d del concepto "%s" es "%s", ' ...
-                             'pero se esperaba "%s" (igual que en "%s").\n' ...
-                             'Todos los conceptos deben tener las mismas etiquetas de objetivos.'], ...
-                            j, concept.name, labelNew, labelRef, ref.name);
+                    if ~strcmp(concept.labels.objectives{j}, ref.labels.objectives{j})
+                        diffIdx(end+1) = j; %#ok<AGROW>
+                    end
+                end
+
+                if ~isempty(diffIdx)
+                    % Construir tabla de diferencias para el diálogo
+                    lines = cell(1, numel(diffIdx));
+                    for k = 1:numel(diffIdx)
+                        j = diffIdx(k);
+                        lines{k} = sprintf('  Obj %d:  "%s"  →  "%s"', ...
+                            j, ref.labels.objectives{j}, concept.labels.objectives{j});
+                    end
+                    msg = sprintf( ...
+                        ['Las etiquetas de objetivos del concepto "%s" ' ...
+                         'difieren de las ya cargadas:\n\n%s\n\n' ...
+                         '¿Qué etiquetas desea usar para TODOS los conceptos?'], ...
+                        concept.name, strjoin(lines, '\n'));
+
+                    answer = questdlg(msg, 'Etiquetas de objetivos distintas', ...
+                        'Mantener actuales', 'Usar las nuevas', 'Cancelar', ...
+                        'Mantener actuales');
+
+                    switch answer
+                        case 'Mantener actuales'
+                            % Actualizar etiquetas del concepto nuevo para que coincidan
+                            newLbls = concept.labels;
+                            newLbls.objectives = ref.labels.objectives;
+                            concept.labels = newLbls;
+
+                        case 'Usar las nuevas'
+                            % Actualizar todos los conceptos existentes
+                            chosenObj = concept.labels.objectives;
+                            for k = 1:numel(obj.concepts)
+                                lbl = obj.concepts{k}.labels;
+                                lbl.objectives = chosenObj;
+                                obj.concepts{k}.labels = lbl;
+                            end
+                            % Actualizar xlabel de los ejes si el LD ya está dibujado
+                            for j = 1:numel(obj.axesObjectives)
+                                ax = obj.axesObjectives{j};
+                                if ~isempty(ax) && isvalid(ax)
+                                    xlabel(ax, chosenObj{j});
+                                end
+                            end
+
+                        otherwise  % 'Cancelar' o cerrar diálogo
+                            return;
                     end
                 end
             end
