@@ -58,8 +58,8 @@ where `offsets(x) = sum of max distances within each preceding band`.
 
 ## `drawPrefBands`
 
-Overlays preference bands on an existing Level Diagram figure.
-Must be called **after** `ld.draw()` and `ld.syncBy(...)`.
+Overlays preference bands on an existing Level Diagram figure synchronized by composedNorm.
+Must be called **after** `ld.draw()`, `composedNorm()` and `ld.syncBy(...)`.
 
 ```matlab
 drawPrefBands(fig, 'obj', pref, offsets)   % Objectives figure
