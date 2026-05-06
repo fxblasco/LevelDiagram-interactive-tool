@@ -58,7 +58,7 @@ Aggregates multiple objectives into a single scalar that ranks Pareto-front solu
 according to class-range preferences defined by the decision maker.
 
 Inspired by Messac (1996) Physical Programming; the piecewise-linear normalisation
-follows [Reynoso-Meza et al. (2014)](https://doi.org/10.1016/j.asoc.2014.08.006).
+follows [Reynoso-Meza et al. (2014)](https://doi.org/10.1016/j.asoc.2014.07.009).
 
 ```matlab
 v = gppl(J, pref)

@@ -12,6 +12,7 @@ function v = gppl(J, pref)
 %     Reynoso-Meza, G., Sanchis, J., Blasco, X., Garcia-Nieto, S. (2014).
 %     Physical programming for preference driven evolutionary
 %     multi-objective optimization. Applied Soft Computing, 24, 341-362.
+%     https://doi.org/10.1016/j.asoc.2014.07.009
 %
 %   Inputs
 %   ------
