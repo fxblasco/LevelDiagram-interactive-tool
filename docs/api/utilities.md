@@ -61,7 +61,8 @@ Inspired by Messac (1996) Physical Programming; the piecewise-linear normalisati
 follows [Reynoso-Meza et al. (2014)](https://doi.org/10.1016/j.asoc.2014.07.009).
 
 ```matlab
-v = gppl(J, pref)
+v              = gppl(J, pref)
+[v, etiquetas] = gppl(J, pref, etiqPref)
 ```
 
 **Arguments**
@@ -70,6 +71,7 @@ v = gppl(J, pref)
 |---|---|---|
 | `J` | `(ns × nobj) double` | Objective values. Each row is one solution. |
 | `pref` | `(nobj × (nranges+1)) double` | Preference table (see below). |
+| `etiqPref` | `(1 × nranges) cell` | *(optional)* Range names, e.g. `{'HD','D','T','U','HU'}`. Must contain exactly `nranges` entries. Required only when `etiquetas` is requested. |
 
 **Preference table format**
 
@@ -95,6 +97,7 @@ pref = [0  1  3;    % J1: Desirable=[0,1],  Tolerable=(1,3],  Indesirable=(3,Inf
 | Name | Type | Description |
 |---|---|---|
 | `v` | `(ns × 1) double` | GPP index per solution. Lower is better. |
+| `etiquetas` | `(ns × 1) cell` | Comma-separated class label per solution, e.g. `'HD,D,T,U,HD'`. Only computed when `etiqPref` is provided. |
 
 **Notes**
 
@@ -109,13 +112,19 @@ pref = [0  1  3;    % J1: Desirable=[0,1],  Tolerable=(1,3],  Indesirable=(3,Inf
 **Workflow with LevelDiagram**
 
 ```matlab
-pref = [0  1  3;
-        0  5  8;
-        0  5 15;
-        0 12 25];
+pref     = [-10 -0.01 -0.005 -0.001 -0.0005 -0.0001;
+              0  0.85    0.9      1     1.5       2;
+              0    14     20     30      35      40;
+              0   0.5    0.9    1.2     1.4     1.5;
+              0   0.5    0.7      1     1.5       2;
+              0    10     11     15      20      25];
+etiqPref = {'HD','D','T','U','HU'};
 
-% Compute GPP index for each Pareto-front solution
+% GPP index only
 v = gppl(c1.objectives, pref);
+
+% GPP index + per-solution labels
+[v, etiquetas] = gppl(c1.objectives, pref, etiqPref);
 
 % Use as sync indicator in the Level Diagram
 ld.syncBy({v});
