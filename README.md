@@ -23,39 +23,33 @@ Pareto fronts using the **Level Diagram** technique.
 ```
 ldtool2026/
 ├── src/
-│   └── matlab/           # Source classes and utilities
-│       ├── Concept.m           # Pareto front/set encapsulation
-│       ├── LevelDiagram.m      # Interactive Level Diagram visualization
-│       ├── asymmetricDist.m    # Asymmetric distance d = norm(max(y-x, 0))
-│       ├── composedNorm.m      # Composed norm based on preference table
-│       └── drawPrefBands.m     # Draw preference sectors on LD figures
-└── test/                 # Examples and test scripts
-    ├── pruebasLd.m
-    └── verPunto.m
+│   └── matlab/                 # Source classes and utilities
+│       ├── Concept.m                 # Pareto front/set encapsulation
+│       ├── LevelDiagram.m            # Interactive Level Diagram visualization
+│       ├── dominance.m               # Pareto front extraction (non-dominated filter)
+│       ├── asymmetricDist.m          # Asymmetric distance d = norm(max(y-x, 0))
+│       ├── composedNorm.m            # Composed norm based on preference table
+│       ├── drawPrefBands.m           # Draw preference sectors on LD figures
+│       └── gppl.m                    # Global Physical Programming index (piecewise-linear)
+└── test/                       # Examples — see each subfolder for a README
+    ├── comparingConcepts/            # Core LevelDiagram features: multiple concepts, coloring, sync
+    └── ACCbenchmark/                 # Real-world example: 6-objective controller design
 ```
 
-## Quick start
+## Examples
+
+Step-by-step examples are in the `test/` folder. Each subfolder contains a
+`README.md` explaining the context and what each section demonstrates.
+
+| Example | Description |
+|---|---|
+| [`test/comparingConcepts/`](test/comparingConcepts/README.md) | Core workflow: create concepts, draw, colour, sync, callbacks, export |
+| [`test/ACCbenchmark/`](test/ACCbenchmark/README.md) | ACC benchmark: 6-objective PID design, GPP index, preference bands, control responses |
+
+Add LDTool to the MATLAB path before running any example:
 
 ```matlab
 addpath('src/matlab')
-
-% 1. Create concepts
-c1 = Concept(pf1, ps1, 'PID');
-c1.labels.objectives = {'IAE', 'TV'};
-c1.labels.parameters = {'Kp', 'Ti', 'Td'};
-
-c2 = Concept(pf2, ps2, 'GPC');
-
-% 2. Build Level Diagram
-ld = LevelDiagram('comparison');
-ld.addConcept(c1);
-ld.addConcept(c2);
-ld.draw();
-
-% 3. Customize
-ld.colorBy(c1, pf1(:,1));           % color by first objective
-ld.syncByNorm(1);                   % switch to L1 norm
-ld.onSelect(c1, @myCallback);       % callback on point click
 ```
 
 ## Requirements
