@@ -51,6 +51,79 @@ ld.draw();
 
 ---
 
+## `gppl`
+
+Global Physical Programming index using a piecewise-linear normalisation scale.
+Aggregates multiple objectives into a single scalar that ranks Pareto-front solutions
+according to class-range preferences defined by the decision maker.
+
+Inspired by Messac (1996) Physical Programming; the piecewise-linear normalisation
+follows [Reynoso-Meza et al. (2014)](https://doi.org/10.1016/j.asoc.2014.08.006).
+
+```matlab
+v = gppl(J, pref)
+```
+
+**Arguments**
+
+| Name | Type | Description |
+|---|---|---|
+| `J` | `(ns × nobj) double` | Objective values. Each row is one solution. |
+| `pref` | `(nobj × (nranges+1)) double` | Preference table (see below). |
+
+**Preference table format**
+
+Each row of `pref` defines the class-range boundaries for one objective:
+
+| Column | Meaning |
+|---|---|
+| 1 | Lower bound of the most desirable range |
+| 2 … nranges | Boundaries between consecutive ranges (D\|T, T\|I, …) |
+
+No trailing `Inf` column is needed: the last range is extrapolated automatically
+using the slope of the preceding range.
+
+```matlab
+pref = [0  1  3;    % J1: Desirable=[0,1],  Tolerable=(1,3],  Indesirable=(3,Inf)
+        0  5  8;    % J2: Desirable=[0,5],  Tolerable=(5,8],  Indesirable=(8,Inf)
+        0  5 15;    % J3: Desirable=[0,5],  Tolerable=(5,15], Indesirable=(15,Inf)
+        0 12 25];   % J4: Desirable=[0,12], Tolerable=(12,25],Indesirable=(25,Inf)
+```
+
+**Returns**
+
+| Name | Type | Description |
+|---|---|---|
+| `v` | `(ns × 1) double` | GPP index per solution. Lower is better. |
+
+**Notes**
+
+- The normalised scale enforces the **OVO rule**: a balanced solution (all objectives
+  in Tolerable) is always preferred over one with any objective in Indesirable, even
+  if the rest are in Desirable.
+- Values below `pref(i,1)` yield a negative contribution for objective `i`
+  (interpreted as "better than the most desirable bound").
+- The last range is extrapolated with a finite slope, so solutions in the indesirable
+  region receive distinct, ordered penalties.
+
+**Workflow with LevelDiagram**
+
+```matlab
+pref = [0  1  3;
+        0  5  8;
+        0  5 15;
+        0 12 25];
+
+% Compute GPP index for each Pareto-front solution
+v = gppl(c1.objectives, pref);
+
+% Use as sync indicator in the Level Diagram
+ld.syncBy({v});
+ld.setSyncLabel('GPP index');
+```
+
+---
+
 ## `composedNorm`
 
 Computes the composed norm for each point of a Pareto front relative to a preference table.
