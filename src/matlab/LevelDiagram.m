@@ -279,6 +279,11 @@ classdef LevelDiagram < handle
                 end
             end
 
+            % Clear selection before recalculating: it may reference the
+            % removed concept, causing stale indices after the array shifts.
+            obj.selection = {};
+            obj.updateHighlightsMultiple([]);
+
             % Recalcular bounds globales y sync del resto
             if ~isempty(obj.concepts)
                 obj.recalcGlobalBoundsAndSync();
@@ -286,10 +291,6 @@ classdef LevelDiagram < handle
 
             % Reconstruir panel de info con los conceptos actuales
             obj.rebuildInfoPanel();
-
-            % Limpiar selección (puede referenciar el concepto eliminado)
-            obj.selection = {};
-            obj.updateHighlightsMultiple([]);
         end
 
         %% Etiqueta eje Y
@@ -335,6 +336,7 @@ classdef LevelDiagram < handle
                 obj.updateYAxis(i);
             end
             obj.rescaleYAxes();
+            obj.refreshHighlights();
         end
 
         function resetBounds(obj)
@@ -389,6 +391,7 @@ classdef LevelDiagram < handle
                 obj.updateYAxis(i);
             end
             obj.rescaleYAxes();
+            obj.refreshHighlights();
         end
 
         %% Coloreado
@@ -1070,6 +1073,22 @@ classdef LevelDiagram < handle
                     obj.scatterParameters{cIdx}{j}.SizeData = sz;
                 end
             end
+        end
+
+        function refreshHighlights(obj)
+            % Rebuild highlight scatter objects using the current selection
+            % and updated sync values. Called after any sync change so that
+            % highlighted points move to their new Y positions.
+            if isempty(obj.selection); return; end
+            selections = struct('conceptIdx', {}, 'indices', {});
+            for k = 1:numel(obj.selection)
+                if ~isempty(obj.selection{k}.indices)
+                    selections(end+1).conceptIdx = obj.selection{k}.conceptIdx; %#ok<AGROW>
+                    selections(end).indices      = obj.selection{k}.indices;
+                end
+            end
+            obj.updateHighlightsMultiple(selections);
+            obj.updateInfoPanel(selections);
         end
 
         function updateHighlightsMultiple(obj, selections)
@@ -2018,6 +2037,7 @@ classdef LevelDiagram < handle
                 obj.updateYAxis(i);
             end
             obj.rescaleYAxes();
+            obj.refreshHighlights();
         end
 
         function sync = computeNorm(~, objectives, bounds, p)
