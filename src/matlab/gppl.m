@@ -1,10 +1,14 @@
-function v = gppl(J, pref)
+function [v, etiquetas] = gppl(J, pref, etiqPref)
 % gppl  Global Physical Programming index (piecewise-linear version).
 %
-%   v = gppl(J, pref)
+%   v              = gppl(J, pref)
+%   [v, etiquetas] = gppl(J, pref, etiqPref)
 %
 %   Computes the GPP index to rank Pareto-front solutions according to
 %   decision-maker preferences expressed as class ranges.
+%   Optionally returns a per-solution label indicating the class range of
+%   each objective (e.g. 'HD,D,T,U,HD').
+%
 %   Inspired by Messac (1996) Physical Programming; the piecewise-linear
 %   normalisation used here follows Reynoso-Meza et al. (2014).
 %
@@ -16,23 +20,30 @@ function v = gppl(J, pref)
 %
 %   Inputs
 %   ------
-%   J    : (ns x nobj) matrix of objective values. Each row is a solution.
-%   pref : (nobj x (nranges+1)) preference table.
-%          Each row contains the class-range boundaries for one objective:
-%            col 1          -> lower bound of the most desirable range
-%            col 2..nranges -> boundaries between consecutive ranges (D|T, T|I, ...)
-%          The last range is extrapolated automatically using the slope of
-%          the preceding range, so no trailing Inf column is needed.
+%   J        : (ns x nobj) matrix of objective values. Each row is a solution.
+%   pref     : (nobj x (nranges+1)) preference table.
+%              Each row contains the class-range boundaries for one objective:
+%                col 1          -> lower bound of the most desirable range
+%                col 2..nranges -> boundaries between consecutive ranges (D|T, T|I, ...)
+%              The last range is extrapolated automatically using the slope of
+%              the preceding range, so no trailing Inf column is needed.
 %
-%          Example — 2 explicit ranges (Desirable, Tolerable) per objective:
-%            pref = [0  1  3;    % J1: D=[0,1], T=(1,3], I=(3,Inf)
-%                    0  5  8;    % J2: D=[0,5], T=(5,8], I=(8,Inf)
-%                    0  5 15;    % J3: D=[0,5], T=(5,15], I=(15,Inf)
-%                    0 12 25];   % J4: D=[0,12], T=(12,25], I=(25,Inf)
+%              Example — 2 explicit ranges (Desirable, Tolerable) per objective:
+%                pref = [0  1  3;    % J1: D=[0,1], T=(1,3], I=(3,Inf)
+%                        0  5  8;    % J2: D=[0,5], T=(5,8], I=(8,Inf)
+%                        0  5 15;    % J3: D=[0,5], T=(5,15], I=(15,Inf)
+%                        0 12 25];   % J4: D=[0,12], T=(12,25], I=(25,Inf)
 %
-%   Output
-%   ------
-%   v : (ns x 1) GPP index for each solution. Lower is better.
+%   etiqPref : (1 x nranges) cell array of range names. Required only when
+%              the second output argument is requested.
+%              Example: {'HD','D','T','U','HU'}
+%
+%   Outputs
+%   -------
+%   v         : (ns x 1) GPP index for each solution. Lower is better.
+%   etiquetas : (ns x 1) cell array. Each entry is a comma-separated string
+%               with the class label of each objective for that solution,
+%               e.g. 'HD,D,T,U,HD'. Only computed when etiqPref is provided.
 %
 %   Notes
 %   -----
@@ -84,8 +95,7 @@ col_seg = seg_mat + 1;                  % 1-based range index
 % Pref lower bound of the active range: pref(i, seg+1).
 pref_start = pref(sub2ind([nobj, npref], row_idx, col_seg));
 
-% Slope of the active range: m(i, min(seg,nranges-1)+1).
-% Extrapolation reuses the last range slope.
+% Slope of the active range. Extrapolation reuses the last range slope.
 slopes_ext = [m, m(:,end)];            % [nobj x nranges+1]
 slope_mat  = slopes_ext(sub2ind([nobj, nranges+1], row_idx, min(col_seg, nranges)));
 
@@ -95,3 +105,16 @@ x_base_mat = x_node(col_seg);          % [nobj x ns]
 
 % Aggregate over objectives.
 v = sum(slope_mat .* (J' - pref_start) + x_base_mat, 1)';
+
+% --- Optional label assignment ---
+if nargin > 2 && nargout > 1
+    nRangos = length(etiqPref);
+    if nRangos ~= nranges
+        error('gppl: etiqPref has %d label(s) but pref defines %d ranges.', nRangos, nranges);
+    end
+    label_idx = min(seg_mat + 1, nRangos);  % [nobj x ns], capped at last label
+    etiquetas = cell(ns, 1);
+    for k = 1:ns
+        etiquetas{k} = strjoin(etiqPref(label_idx(:,k)'), ',');
+    end
+end
