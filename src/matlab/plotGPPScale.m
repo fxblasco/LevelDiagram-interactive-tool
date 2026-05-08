@@ -1,5 +1,5 @@
 function plotGPPScale(pref, etiqPref)
-% plotGPPScale  Plot the GPP normalisation scale for each objective.
+% plotGPPScale  Plot the GPP class function g(J_i) for each objective.
 %
 %   plotGPPScale(pref)
 %   plotGPPScale(pref, etiqPref)
@@ -92,7 +92,7 @@ margin = 0.15;
 
 figW = max(380 * nobj, 560);
 figH = 370;
-figure('Name',     'GPP normalisation scale', ...
+figure('Name',     'GPP class functions', ...
        'Color',    'white', ...
        'Position', [80, 80, figW, figH]);
 
@@ -167,7 +167,7 @@ for i = 1:nobj
 
     % Axes formatting
     xlabel(sprintf('J_%d', i), 'FontSize', 11);
-    ylabel('GPP index',        'FontSize', 10);
+    ylabel(sprintf('g(J_%d)', i), 'FontSize', 10);
     title(sprintf('J_%d  [%s]', i, num2str(pref(i,:), '%.2g  ')), ...
           'FontSize', 10, 'FontWeight', 'bold');
     ylim([y_lo, y_hi]);
@@ -177,7 +177,7 @@ for i = 1:nobj
     hold off;
 end
 
-sgtitle('GPP normalisation scale per objective', ...
+sgtitle('Class function per objective', ...
         'FontSize', 13, 'FontWeight', 'bold');
 end
 

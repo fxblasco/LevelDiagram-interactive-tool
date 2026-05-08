@@ -135,7 +135,8 @@ ld.setSyncLabel('GPP index');
 
 ## `plotGPPScale`
 
-Plots the piecewise-linear GPP normalisation function for each objective in a single-row figure.
+Plots the piecewise-linear GPP class function g(J_i) for each objective in a single-row figure.
+Each subplot shows the normalised contribution of one objective to the GPP index.
 Useful for verifying that the preference table produces the intended scale before using `gppl`.
 
 ```matlab
