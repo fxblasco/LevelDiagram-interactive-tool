@@ -108,11 +108,15 @@ v = sum(slope_mat .* (J' - pref_start) + x_base_mat, 1)';
 
 % --- Optional label assignment ---
 if nargin > 2 && nargout > 1
-    nRangos = length(etiqPref);
-    if nRangos ~= nranges
-        error('gppl: etiqPref has %d label(s) but pref defines %d ranges.', nRangos, nranges);
+    nLabels = length(etiqPref);
+    if nLabels == nranges
+        % Extrapolated range not explicitly named: append '+' to the last label
+        etiqPref{nranges + 1} = [etiqPref{nranges} '+'];
+    elseif nLabels ~= nranges + 1
+        error('gppl: etiqPref must have %d labels (explicit ranges) or %d (including extrapolated range). Got %d.', ...
+              nranges, nranges + 1, nLabels);
     end
-    label_idx = min(seg_mat + 1, nRangos);  % [nobj x ns], capped at last label
+    label_idx = min(seg_mat + 1, nranges + 1);  % [nobj x ns]
     etiquetas = cell(ns, 1);
     for k = 1:ns
         etiquetas{k} = strjoin(etiqPref(label_idx(:,k)'), ',');

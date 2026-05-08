@@ -30,7 +30,8 @@ ldtool2026/
 │       ├── asymmetricDist.m          # Asymmetric distance d = norm(max(y-x, 0))
 │       ├── composedNorm.m            # Composed norm based on preference table
 │       ├── drawPrefBands.m           # Draw preference sectors on LD figures
-│       └── gppl.m                    # Global Physical Programming index (piecewise-linear)
+│       ├── gppl.m                    # Global Physical Programming index (piecewise-linear)
+│       └── plotGPPScale.m            # Plot GPP normalisation scale per objective
 └── test/                       # Examples — see each subfolder for a README
     ├── comparingConcepts/            # Core LevelDiagram features: multiple concepts, coloring, sync
     └── ACCbenchmark/                 # Real-world example: 6-objective controller design

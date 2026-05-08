@@ -71,7 +71,7 @@ v              = gppl(J, pref)
 |---|---|---|
 | `J` | `(ns × nobj) double` | Objective values. Each row is one solution. |
 | `pref` | `(nobj × (nranges+1)) double` | Preference table (see below). |
-| `etiqPref` | `(1 × nranges) cell` | *(optional)* Range names, e.g. `{'HD','D','T','U','HU'}`. Must contain exactly `nranges` entries. Required only when `etiquetas` is requested. |
+| `etiqPref` | `(1 × nranges) or (1 × (nranges+1)) cell` | *(optional)* Range names, e.g. `{'HD','D','T','U','HU'}`. If `nranges` labels are given, the extrapolated range is labelled automatically as the last label with `'+'` appended. If `nranges+1` labels are given, the last one is used as-is. Required only when `etiquetas` is requested. |
 
 **Preference table format**
 
@@ -129,6 +129,40 @@ v = gppl(c1.objectives, pref);
 % Use as sync indicator in the Level Diagram
 ld.syncBy({v});
 ld.setSyncLabel('GPP index');
+```
+
+---
+
+## `plotGPPScale`
+
+Plots the piecewise-linear GPP normalisation function for each objective in a single-row figure.
+Useful for verifying that the preference table produces the intended scale before using `gppl`.
+
+```matlab
+plotGPPScale(pref)
+plotGPPScale(pref, etiqPref)
+```
+
+**Arguments**
+
+| Name | Type | Description |
+|---|---|---|
+| `pref` | `(nobj × (nranges+1)) double` | Preference table — same format as `gppl`. |
+| `etiqPref` | `(1 × nranges) or (1 × (nranges+1)) cell` | *(optional)* Range labels. Same rules as `gppl`: `nranges` entries auto-appends `'+'` for the extrapolated range; `nranges+1` entries used as-is. Defaults to `{'R1','R2',…}`. |
+
+Each subplot shows:
+
+- Shaded background per class range (green → yellow → red by default)
+- Dashed vertical markers at each boundary with `'RangeA|RangeB'` labels
+- The GPP curve in black
+- Filled dots at the preference boundary nodes
+
+**Example**
+
+```matlab
+pref = [0  1  3;
+        0  5  8];
+plotGPPScale(pref, {'D', 'T', 'U'})
 ```
 
 ---
