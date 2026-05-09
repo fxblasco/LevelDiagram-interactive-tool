@@ -24,19 +24,13 @@ function Md = dominanceCone(M)
 %   Md : (nobj x nobj) dominance cone matrix.
 %        Each column vd_i is the dominance vector associated with v_i.
 %
-%   Usage with gppl / dominance
-%   ---------------------------
+%   Usage
+%   -----
 %   Once Md is obtained, the objective matrix J can be projected onto the
-%   dominance cone basis before applying GPP or dominance analysis:
+%   dominance cone basis:
 %
 %       Md   = dominanceCone(M);
 %       J_dc = J * Md;           % (ns x nobj) projected objectives
-%
-%   The preference table pref and bounds must be expressed in the same
-%   transformed space:
-%
-%       pref_dc   = Md' * pref;          % (nobj x (nranges+1))
-%       bounds_dc = ld.globalBounds * Md; % (2 x nobj)
 %
 %   Reference
 %   ---------

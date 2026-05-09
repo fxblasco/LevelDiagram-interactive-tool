@@ -30,24 +30,17 @@ Md = dominanceCone(M)
 
 For each preference direction `v_i`, the corresponding dominance vector `vd_i` is the solution of the linear system that places it orthogonal to all other columns of `M`. The sign is chosen so that `vd_i` lies in the same half-space as `v_i`, and the result is unit-normalised.
 
-**Workflow**
+**Usage**
 
-Once `Md` is obtained, project the objective matrix `J` onto the dominance cone basis before applying `dominance`, `gppl`, or the Level Diagram:
+Once `Md` is obtained, project the objective matrix `J` onto the dominance cone basis:
 
 ```matlab
-M  = [v1, v2, v3];          % preference directions (nobj x nobj)
-Md = dominanceCone(M);      % dominance cone matrix
+M    = [v1, v2, v3];     % preference directions (nobj x nobj)
+Md   = dominanceCone(M); % dominance cone matrix
+J_dc = J * Md;           % (ns x nobj) — objectives in cone basis
 
-% Project objectives
-J_dc = J * Md;              % (ns x nobj) — objectives in cone basis
-
-% Transform the preference table and bounds consistently
-pref_dc   = Md' * pref;                   % (nobj x (nranges+1))
-bounds_dc = ld.globalBounds * Md;         % (2 x nobj)
-
-% Standard analysis in the transformed space
+% Dominance analysis in the transformed space
 [pf_dc, ps] = dominance(J_dc, ps);
-v           = gppl(J_dc, pref_dc);
 ```
 
 **Reference**
