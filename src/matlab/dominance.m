@@ -1,9 +1,17 @@
 function [x, y] = dominance(P, D)
+% [ParetoFront, ParetoSet] = dominance(ObjFunValues)
 % [ParetoFront, ParetoSet] = dominance(ObjFunValues, DecVarValues)
+%
 %   P  : Matrix with objective function values (each row is a solution)
-%   D  : Matrix with decision variable values  (each row is a solution)
-%   x  : Pareto Front (non-dominated solutions in objective space)
-%   y  : Pareto Set   (non-dominated solutions in decision space)
+%   D  : (optional) Matrix with decision variable values (each row is a solution).
+%        If omitted, y returns the row indices of non-dominated solutions.
+%   x  : Pareto Front (non-dominated rows of P)
+%   y  : Pareto Set   (non-dominated rows of D, or indices when D is omitted)
+
+noDecVars = nargin < 2;
+if noDecVars
+    D = (1:size(P,1))';   % use row indices as surrogate decision variables
+end
 
 N = size(P, 1);
 

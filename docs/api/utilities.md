@@ -9,6 +9,7 @@ Standalone functions that complement `LevelDiagram` and `Concept`.
 Extracts the Pareto front (non-dominated solutions) from a set of objective function values and their associated decision variables.
 
 ```matlab
+[x, y] = dominance(P)
 [x, y] = dominance(P, D)
 ```
 
@@ -17,14 +18,14 @@ Extracts the Pareto front (non-dominated solutions) from a set of objective func
 | Name | Type | Description |
 |---|---|---|
 | `P` | `(N × nobj) double` | Objective function values. Each row is one solution. |
-| `D` | `(N × nvar) double` | Decision variable values. Each row corresponds to the same solution as the same row of `P`. |
+| `D` | `(N × nvar) double` | *(optional)* Decision variable values. If omitted, `y` returns the row indices of the non-dominated solutions instead. |
 
 **Returns**
 
 | Name | Type | Description |
 |---|---|---|
 | `x` | `(np × nobj) double` | Pareto front: non-dominated rows of `P`. |
-| `y` | `(np × nvar) double` | Pareto set: rows of `D` corresponding to `x`. |
+| `y` | `(np × nvar) double` or `(np × 1) int` | Pareto set (rows of `D`) when `D` is provided; row indices of non-dominated solutions otherwise. |
 
 **Notes**
 
@@ -39,8 +40,11 @@ Extracts the Pareto front (non-dominated solutions) from a set of objective func
 P = rand(500, 3);   % 500 solutions, 3 objectives (minimization)
 D = rand(500, 5);   % 5 decision variables per solution
 
-% Extract non-dominated solutions
+% Extract non-dominated solutions (front + set)
 [pf, ps] = dominance(P, D);
+
+% Objectives only — y returns the non-dominated row indices
+[pf, idx] = dominance(P);
 
 % Wrap in a Concept and visualise
 c = Concept(pf, ps, 'MyFront');
