@@ -92,13 +92,14 @@ margin = 0.15;
 
 figW = max(380 * nobj, 560);
 figH = 370;
-figure('Name',     'GPP class functions', ...
-       'Color',    'white', ...
-       'Position', [80, 80, figW, figH]);
+fig = figure('Name',     'GPP class functions', ...
+             'Color',    'white', ...
+             'Position', [80, 80, figW, figH]);
+tl = tiledlayout(fig, 1, nobj, 'TileSpacing', 'compact', 'Padding', 'compact');
 
 for i = 1:nobj
 
-    subplot(1, nobj, i);
+    nexttile(tl);
     hold on;
 
     % J range to display
@@ -177,8 +178,8 @@ for i = 1:nobj
     hold off;
 end
 
-sgtitle('Class function per objective', ...
-        'FontSize', 13, 'FontWeight', 'bold');
+title(tl, 'Class function per objective', ...
+      'FontSize', 13, 'FontWeight', 'bold');
 end
 
 % -------------------------------------------------------------------------
