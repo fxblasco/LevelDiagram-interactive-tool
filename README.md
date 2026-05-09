@@ -27,6 +27,7 @@ ldtool2026/
 │       ├── Concept.m                 # Pareto front/set encapsulation
 │       ├── LevelDiagram.m            # Interactive Level Diagram visualization
 │       ├── dominance.m               # Pareto front extraction (non-dominated filter)
+│       ├── dominanceCone.m           # Dominance cone matrix from preference directions (Blasco 2021)
 │       ├── asymmetricDist.m          # Asymmetric distance d = norm(max(y-x, 0))
 │       ├── composedNorm.m            # Composed norm based on preference table
 │       ├── drawPrefBands.m           # Draw preference sectors on LD figures

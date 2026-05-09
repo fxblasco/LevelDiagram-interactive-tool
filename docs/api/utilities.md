@@ -4,6 +4,61 @@ Standalone functions that complement `LevelDiagram` and `Concept`.
 
 ---
 
+## `dominanceCone`
+
+Computes the dominance cone matrix from a set of preference directions.
+Used to define a generalised dominance relation in objective space that is
+aligned with the decision-maker's preferences (Blasco et al., 2021).
+
+```matlab
+Md = dominanceCone(M)
+```
+
+**Arguments**
+
+| Name | Type | Description |
+|---|---|---|
+| `M` | `(nobj × nobj) double` | Preference direction matrix. Each **column** is a preference direction vector. Columns must be linearly independent. |
+
+**Returns**
+
+| Name | Type | Description |
+|---|---|---|
+| `Md` | `(nobj × nobj) double` | Dominance cone matrix. Each column `vd_i` is the unit-normalised dominance vector dual to `v_i`: orthogonal to all other preference directions and oriented so that `vd_i · v_i > 0`. |
+
+**Algorithm**
+
+For each preference direction `v_i`, the corresponding dominance vector `vd_i` is the solution of the linear system that places it orthogonal to all other columns of `M`. The sign is chosen so that `vd_i` lies in the same half-space as `v_i`, and the result is unit-normalised.
+
+**Workflow**
+
+Once `Md` is obtained, project the objective matrix `J` onto the dominance cone basis before applying `dominance`, `gppl`, or the Level Diagram:
+
+```matlab
+M  = [v1, v2, v3];          % preference directions (nobj x nobj)
+Md = dominanceCone(M);      % dominance cone matrix
+
+% Project objectives
+J_dc = J * Md;              % (ns x nobj) — objectives in cone basis
+
+% Transform the preference table and bounds consistently
+pref_dc   = Md' * pref;                   % (nobj x (nranges+1))
+bounds_dc = ld.globalBounds * Md;         % (2 x nobj)
+
+% Standard analysis in the transformed space
+[pf_dc, ps] = dominance(J_dc, ps);
+v           = gppl(J_dc, pref_dc);
+```
+
+**Reference**
+
+Blasco, X., Herrero, J.M., Reynoso-Meza, G., Ramos, C. (2021).
+*Preference-based multi-objective engineering design problems through a new preference model.*
+Engineering Applications of Artificial Intelligence, 100, 104152.
+<https://doi.org/10.1016/j.engappai.2021.104152>
+
+---
+
 ## `dominance`
 
 Extracts the Pareto front (non-dominated solutions) from a set of objective function values and their associated decision variables.
