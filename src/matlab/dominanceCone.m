@@ -26,11 +26,12 @@ function Md = dominanceCone(M)
 %
 %   Usage
 %   -----
-%   Once Md is obtained, the objective matrix J can be projected onto the
-%   dominance cone basis:
+%   Once Md is obtained, express the objective matrix J in the dominance
+%   cone basis by applying the inverse change of basis:
 %
 %       Md   = dominanceCone(M);
-%       J_dc = J * Md;           % (ns x nobj) projected objectives
+%       J_dc = (Md \ J')';      % (ns x nobj) — J in the cone basis
+%                               % equivalent to (inv(Md) * J')'
 %
 %   Reference
 %   ---------

@@ -35,9 +35,10 @@ For each preference direction `v_i`, the corresponding dominance vector `vd_i` i
 Once `Md` is obtained, project the objective matrix `J` onto the dominance cone basis:
 
 ```matlab
-M    = [v1, v2, v3];     % preference directions (nobj x nobj)
-Md   = dominanceCone(M); % dominance cone matrix
-J_dc = J * Md;           % (ns x nobj) — objectives in cone basis
+M    = [v1, v2, v3];      % preference directions (nobj x nobj)
+Md   = dominanceCone(M);  % dominance cone matrix
+J_dc = (Md \ J')';        % (ns x nobj) — J expressed in the cone basis
+                           % equivalent to (inv(Md) * J')'
 
 % Dominance analysis in the transformed space
 [pf_dc, ps] = dominance(J_dc, ps);
