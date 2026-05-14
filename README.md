@@ -1,7 +1,12 @@
 # LDTool — Level Diagram Toolbox
 
+[![View on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://es.mathworks.com/matlabcentral/fileexchange/62224-interactive-tool-for-decision-making-in-multiobjective-optimization-with-level-diagrams)
+
 Interactive MATLAB toolbox for visualizing and analysing multi-objective 
 Pareto fronts using the **Level Diagram** technique.
+
+> **New version actively developed on GitHub.**  
+> The original release is available on [MATLAB File Exchange (62224)](https://es.mathworks.com/matlabcentral/fileexchange/62224-interactive-tool-for-decision-making-in-multiobjective-optimization-with-level-diagrams).
 
 ## Features
 
