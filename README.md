@@ -5,8 +5,9 @@
 Interactive MATLAB toolbox for visualizing and analysing multi-objective 
 Pareto fronts using the **Level Diagram** technique.
 
-> **New version actively developed on GitHub.**  
+> **New version actively developed on GitHub. A completely redesigned version with a cleaner architecture, improved robustness, and extended functionality.**  
 > The original release is available on [MATLAB File Exchange (62224)](https://es.mathworks.com/matlabcentral/fileexchange/62224-interactive-tool-for-decision-making-in-multiobjective-optimization-with-level-diagrams).
+>  Matlab filexchange entry is kept for reference only.
 
 ## Features
 
