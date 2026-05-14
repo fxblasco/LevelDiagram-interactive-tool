@@ -62,6 +62,7 @@ addpath('src/matlab')
 ## Requirements
 
 - MATLAB R2019b or later (uses `scatter` with `CData`, `uitable`, `uicontrol`)
+- Compatible with Windows, macOS and Linux
 
 ## Reference
 
