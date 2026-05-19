@@ -37,7 +37,7 @@ pref = [-10 -0.01 -0.005 -0.001 -0.0005 -0.0001;   % f1
           0   0.5    0.9    1.2     1.4     1.5;    % f4
           0   0.5    0.7      1     1.5       2;     % f5
           0    10     11     15      20      25];    % f6
-etiqPref = {'HD','D','T','U','HU'};
+etiqPref = {'HD','D','T','I','U','HU'};
 
 %% 3. Compute GPP index
 % Global Physical Programming index ranks solutions according to preferences.
@@ -68,14 +68,20 @@ p_des = pref(:,3)';                                       % tolerable boundary v
 da    = asymmetricDist(p_des, pf);
 ld.colorBy(c1, da, 'colormap', 'hot', 'label', 'Asym. dist. to tolerable point');
 
+% Synch by asymmetric distance from tolerable vertex. 
+ld.syncBy({da});
+ld.setSyncLabel('Asym dist from Tolerable Vertex');
+
 %% 6. Colour by GPP index (log scale for better colour contrast)
 ld.colorBy(c1, log10(vgpp), 'colormap', 'hot', 'label', 'log10(GPP)');
 
 % Register callback: clicking a point prints its GPP details in the console.
 ld.onSelect(c1, @displayGPPInfo);
 
-%% 7. Colour with a fixed RGB colour
-ld.colorBy(c1, [0.3 0.7 0.9])
+
+% 6b. Colour by solutions increasing x5 
+ld.colorBy(c1, ps(:,5), 'colormap', 'hot', 'label', 'x5');
+
 
 %% 8. Highlight solutions that already dominate the tolerable point (da == 0)
 % Extract them as a separate concept and display them with a larger marker.
@@ -85,6 +91,8 @@ ld.addConcept(subset_da0);
 ld.setSize(subset_da0, 120)
 
 ld.removeConcept(subset_da0);   % remove subset when done
+
+
 
 %% 9. Switch synchronisation norm
 ld.syncByNorm(inf);
@@ -106,8 +114,9 @@ ld.colorBy(c1, dcn, 'colormap', 'jet', 'label', 'Composed Norm');
 
 %% 11. Overlay preference bands on the figures
 figObj = findobj(groot, 'Type', 'figure', 'Name', 'Objectives - ld1');
-figPar = findobj(groot, 'Type', 'figure', 'Name', 'Parameters - ld1');
+figPar = findobj(groot, 'Type', 'figure', 'Name', 'Parameters - accBenchmark');
 
+% Use the original drawPrefBands which works reliably with LD selection
 drawPrefBands(figObj, 'obj', pref, offsets, etiqPref);
 drawPrefBands(figPar, 'par',       offsets, etiqPref);
 
