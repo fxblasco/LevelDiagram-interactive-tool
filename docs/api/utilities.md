@@ -237,13 +237,13 @@ The result is a single scalar per point that encodes both **which preference hyp
 |---|---|---|
 | `pf` | `(np × nobj) double` | Pareto front in original objective units |
 | `pref` | `(nobj × nI) double` | Preference table. Each column is one hypercube vertex. Column 1 = most preferred, column `nI` = least preferred. |
-| `bounds` | `(2 × nobj) double` | *(optional)* Normalisation bounds `[max; min]`, same format as `ld.globalBounds`. If omitted, raw objective values are used (no normalisation). |
+| `bounds` | `(2 × nobj) double` | *(optional)* Normalisation bounds `[max; min]`, same format as `ld.globalBounds`. If omitted, normalisation uses the min/max range of each objective in the preference table. |
 
 **Returns**
 
 | Name | Type | Description |
 |---|---|---|
-| `dn` | `(np × 1) double` | Composed norm value per point. Consistent with the Level Diagram Y-axis when `bounds` is provided. |
+| `dn` | `(np × 1) double` | Composed norm value per point. Comparable across different solution sets evaluated with the same preference table. |
 | `offsets` | `(nI × 1) double` | Y-axis offset for each preference band (`offsets(1) = 0`). Pass to [`drawPrefBands`](#drawprefbands). |
 
 **Workflow**
@@ -252,7 +252,7 @@ The result is a single scalar per point that encodes both **which preference hyp
 pref = [0.3 0.6;   % objective 1: prefer <0.3, tolerate <0.6
         0.4 0.7];  % objective 2: prefer <0.4, tolerate <0.7
 
-[dn, offsets] = composedNorm(c1.objectives, pref, ld.globalBounds);
+[dn, offsets] = composedNorm(c1.objectives, pref);
 ld.syncBy({dn});
 
 figObj = findobj(groot, 'Type', 'figure', 'Name', 'Objectives - myLD');
@@ -269,7 +269,7 @@ Each point is assigned to the innermost hypercube `x` (from most to least prefer
 dn(i) = norm(max(pf_norm(i,:) - pref_norm(:,x)', 0)) + offsets(x)
 ```
 
-where `offsets(x) = sum of max distances within each preceding band`.
+where `offsets(x) = sum of Euclidean distances between consecutive hypercube vertices in the normalised space`. Offsets depend only on `pref`, not on the evaluated points, so `dn` values are comparable across different solution sets.
 
 ---
 
@@ -279,8 +279,9 @@ Overlays preference bands on an existing Level Diagram figure synchronized by co
 Must be called **after** `ld.draw()`, `composedNorm()` and `ld.syncBy(...)`.
 
 ```matlab
-drawPrefBands(fig, 'obj', pref, offsets)   % Objectives figure
-drawPrefBands(fig, 'par', offsets)          % Parameters figure
+drawPrefBands(fig, 'obj', pref, offsets)            % Objectives figure
+drawPrefBands(fig, 'obj', pref, offsets, labels)    % with band labels
+drawPrefBands(fig, 'par', offsets)                  % Parameters figure
 ```
 
 **Arguments**
@@ -300,6 +301,7 @@ Additional arguments:
 |---|---|---|
 | `pref` | `(nobj × nI) double` | Preference table (same as passed to `composedNorm`) |
 | `offsets` | `(nI × 1) double` | Y-axis offsets from `composedNorm` |
+| `labels` | `(1 × nI) cell` | *(optional)* Band label strings drawn vertically on the left edge of each sector. E.g. `{'Preferred','Tolerable','Undesirable'}`. |
 
 **Mode `'par'` — horizontal bands on a Parameters figure**
 
@@ -320,13 +322,13 @@ Additional argument:
 **Example**
 
 ```matlab
-[dn, offsets] = composedNorm(c1.objectives, pref, ld.globalBounds);
+[dn, offsets] = composedNorm(c1.objectives, pref);
 ld.syncBy({dn});
 
 figObj = findobj(groot, 'Type', 'figure', 'Name', 'Objectives - myLD');
 figPar = findobj(groot, 'Type', 'figure', 'Name', 'Parameters - PID');
 
-drawPrefBands(figObj, 'obj', pref, offsets);
+drawPrefBands(figObj, 'obj', pref, offsets, {'Preferred','Tolerable','Undesirable'});
 drawPrefBands(figPar, 'par', offsets);
 ```
 

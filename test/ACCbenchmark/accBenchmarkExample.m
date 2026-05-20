@@ -104,8 +104,8 @@ ld.setSyncLabel('L\infty norm');
 %% 10. Synchronise by Composed Norm
 % composedNorm assigns each solution to the innermost preference hypercube
 % it does not dominate, then measures distance within that hypercube.
-bounds = [max(pf); min(pf)];
-[dcn, offsets] = composedNorm(pf, pref, bounds);
+
+[dcn, offsets] = composedNorm(pf, pref);
 ld.syncBy({dcn});
 ld.setSyncLabel('Composed Norm');
 
@@ -116,7 +116,7 @@ ld.colorBy(c1, dcn, 'colormap', 'jet', 'label', 'Composed Norm');
 figObj = findobj(groot, 'Type', 'figure', 'Name', 'Objectives - ld1');
 figPar = findobj(groot, 'Type', 'figure', 'Name', 'Parameters - accBenchmark');
 
-% Use the original drawPrefBands which works reliably with LD selection
+% Draw Preference Bands
 drawPrefBands(figObj, 'obj', pref, offsets, etiqPref);
 drawPrefBands(figPar, 'par',       offsets, etiqPref);
 

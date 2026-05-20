@@ -3,10 +3,13 @@ function drawPrefBands(fig, mode, varargin)
 %
 %   OBJECTIVES figure  — staircase sectors (reach down to x-axis):
 %     drawPrefBands(fig, 'obj', pref, offsets)
+%     drawPrefBands(fig, 'obj', pref, offsets, labels)
 %
 %       pref    : (nobj x nI) preference table (col x = vertex of hypercube x,
 %                 most preferred col 1 to least preferred col nI)
 %       offsets : (nI x 1) Y-axis offsets from composedNorm (offsets(1)=0)
+%       labels  : (1 x nI) cell of strings — optional band labels drawn
+%                 vertically on the left of each sector
 %
 %   PARAMETERS figure  — full-width horizontal bands:
 %     drawPrefBands(fig, 'par', offsets)
@@ -16,7 +19,7 @@ function drawPrefBands(fig, mode, varargin)
 %   ld.syncBy({dn});
 %   figObj = findobj(groot, 'Type', 'figure', 'Name', 'myLD - Objectives');
 %   figPar = findobj(groot, 'Type', 'figure', 'Name', 'myLD - c1');
-%   drawPrefBands(figObj, 'obj', pref, offsets)
+%   drawPrefBands(figObj, 'obj', pref, offsets, {'Preferred','Tolerable','Undesirable'})
 %   drawPrefBands(figPar, 'par', offsets)
 
 TAG = 'PrefBand';
@@ -30,6 +33,10 @@ switch lower(mode)
     case 'obj'
         pref    = varargin{1};
         offsets = varargin{2}(:);
+        labels  = {};
+        if numel(varargin) >= 3
+            labels = varargin{3};
+        end
 
         nI = size(pref, 2);
 
@@ -104,6 +111,31 @@ switch lower(mode)
             end
 
             uistack(findobj(ax, 'Type', 'scatter'), 'top');
+
+            % Band labels only on the rightmost subplot, placed outside the
+            % right edge with Clipping=off.
+            if ~isempty(labels) && k == numel(axList)
+                xPos = xLims(2) + 0.015 * (xLims(2) - xLims(1));
+                for x = 1:nI
+                    if x > numel(labels); continue; end
+                    yBot = yBounds(x);
+                    yTop = min(yBounds(x + 1), yLims(2));
+                    yMid = (yBot + yTop) / 2;
+                    if yMid < yLims(1) || yMid > yLims(2); continue; end
+                    text(ax, xPos, yMid, labels{x}, ...
+                        'Rotation', 0, ...
+                        'HorizontalAlignment', 'left', ...
+                        'VerticalAlignment', 'middle', ...
+                        'FontSize', 9, ...
+                        'FontWeight', 'bold', ...
+                        'Color', [0.10 0.10 0.10], ...
+                        'Tag', TAG, ...
+                        'HandleVisibility', 'off', ...
+                        'HitTest', 'off', ...
+                        'PickableParts', 'none', ...
+                        'Clipping', 'off');
+                end
+            end
         end
 
     %% ---- PARAMETERS: horizontal bands -----------------------------------
@@ -151,8 +183,8 @@ end
 
 %% -------------------------------------------------------------------------
 function c = grayShade(x, nTotal)
-gMin = 0.62;
-gMax = 0.93;
+gMin = 0.3;
+gMax = 0.95;
 t = (x - 1) / max(nTotal - 1, 1);
 g = gMax - t * (gMax - gMin);
 c = [g g g];
