@@ -33,9 +33,9 @@ ldtool2026/
 │       ├── Concept.m                 # Pareto front/set encapsulation
 │       ├── LevelDiagram.m            # Interactive Level Diagram visualization
 │       ├── dominance.m               # Pareto front extraction (non-dominated filter)
-│       ├── dominanceCone.m           # Dominance cone matrix from preference directions (Blasco 2021)
-│       ├── asymmetricDist.m          # Asymmetric distance d = norm(max(y-x, 0))
-│       ├── composedNorm.m            # Composed norm based on preference table
+│       ├── dominanceCone.m           # Dominance cone matrix from preference directions (Blasco et al. 2021)
+│       ├── asymmetricDist.m          # Asymmetric distance d = norm(max(y-x, 0)) (Blasco et al. 2016)
+│       ├── composedNorm.m            # Composed norm based on preference table (Blasco et al. 2016)
 │       ├── drawPrefBands.m           # Draw preference sectors on LD figures
 │       ├── gppl.m                    # Global Physical Programming index (piecewise-linear)
 │       ├── plotGPPScale.m            # Plot GPP normalisation scale per objective
@@ -73,7 +73,20 @@ Blasco, X., Herrero, J.M., Sanchis, J., Martínez, M. (2008).
 in multiobjective optimization.*  
 Information Sciences, 178(20), 3908–3924.
 
+Blasco, X., Reynoso-Meza, G., Sánchez-Pérez, E.A., Sánchez-Pérez, J.V. (2016).  
+*Asymmetric distances to improve n-dimensional Pareto fronts graphical analysis.*  
+Information Sciences, 340–341, 228–249.  
+https://doi.org/10.1016/j.ins.2015.12.039  
+*(basis for `asymmetricDist.m` and `composedNorm.m`)*
+
+Blasco, X., Reynoso-Meza, G., Sánchez-Pérez, E.A., Sánchez-Pérez, J.V., Jonard-Pérez, N. (2021).  
+*A Simple Proposal for Including Designer Preferences in Multi-Objective Optimization Problems.*  
+Mathematics, 9(9), 991.  
+https://doi.org/10.3390/math9090991  
+*(basis for `dominanceCone.m`)*
+
 Reynoso-Meza, G., Blasco, X., Sanchis, J., Herrero, J.M. (2013).  
 *Comparison of design concepts in multi-criteria decision-making using level diagrams.*  
 Information Sciences, 221, 124–141.  
+https://doi.org/10.1016/j.ins.2012.09.049  
 *(basis for `qualityIndicator.m`)*
