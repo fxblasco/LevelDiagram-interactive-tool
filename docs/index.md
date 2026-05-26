@@ -41,7 +41,8 @@ ld.onSelect(c1, @myCallback);    % callback on point click
 | Concept visibility | Checkbox in the Objectives figure hides a concept from all figures and the Info Panel |
 | Interactive selection | Click a point, drag a rectangle, Shift for multi-selection |
 | Colour / size / marker | Per-point colormap, RGB matrix, or fixed colour |
-| Y-axis sync | p-norm (1, 2, ∞) or any external quality indicator |
+| Y-axis sync | p-norm (1, 2, ∞) or any external quality indicator via `syncBy` |
+| `qualityIndicator` | Per-point Q indicator comparing two Pareto fronts (Reynoso-Meza 2013) |
 | Sync label | `setSyncLabel` propagates to axes, Info Panel column header, and CSV exports |
 | Preference bands | Overlay staircase sectors from a preference table |
 | Export | Selection → new `Concept`, workspace variable, or CSV |
@@ -56,3 +57,8 @@ MATLAB R2019b or later (`scatter` with `CData`, `uitable`, `uicontrol`).
 Blasco, X., Herrero, J.M., Sanchis, J., Martínez, M. (2008).
 *A new graphical visualization of n-dimensional Pareto front for decision-making in multiobjective optimization.*
 Information Sciences, 178(20), 3908–3924.
+
+Reynoso-Meza, G., Blasco, X., Sanchis, J., Herrero, J.M. (2013).
+*Comparison of design concepts in multi-criteria decision-making using level diagrams.*
+Information Sciences, 221, 124–141.
+*(basis for `qualityIndicator.m`)*

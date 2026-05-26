@@ -38,7 +38,8 @@ ldtool2026/
 │       ├── composedNorm.m            # Composed norm based on preference table
 │       ├── drawPrefBands.m           # Draw preference sectors on LD figures
 │       ├── gppl.m                    # Global Physical Programming index (piecewise-linear)
-│       └── plotGPPScale.m            # Plot GPP normalisation scale per objective
+│       ├── plotGPPScale.m            # Plot GPP normalisation scale per objective
+│       └── qualityIndicator.m        # Per-point Q indicator for Pareto front comparison (Reynoso-Meza 2013)
 └── test/                       # Examples — see each subfolder for a README
     ├── comparingConcepts/            # Core LevelDiagram features: multiple concepts, coloring, sync
     └── ACCbenchmark/                 # Real-world example: 6-objective controller design
@@ -71,3 +72,8 @@ Blasco, X., Herrero, J.M., Sanchis, J., Martínez, M. (2008).
 *A new graphical visualization of n-dimensional Pareto front for decision-making 
 in multiobjective optimization.*  
 Information Sciences, 178(20), 3908–3924.
+
+Reynoso-Meza, G., Blasco, X., Sanchis, J., Herrero, J.M. (2013).  
+*Comparison of design concepts in multi-criteria decision-making using level diagrams.*  
+Information Sciences, 221, 124–141.  
+*(basis for `qualityIndicator.m`)*
