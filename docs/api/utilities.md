@@ -336,13 +336,13 @@ drawPrefBands(figPar, 'par', offsets);
 
 ## `asymmetricDist`
 
-Asymmetric distance measuring how much point `y` must move component-wise to dominate point `x`.
+Asymmetric distance measuring how much point `y` must move to dominate point `x`.
 
 ```
 d = norm(max(y - x, 0))
 ```
 
-Zero means `x` already dominates `y` (or they are equal).
+Zero means `y` already dominates `x` (or they are equal).
 
 ```matlab
 d = asymmetricDist(x, y)
