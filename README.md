@@ -72,6 +72,7 @@ Blasco, X., Herrero, J.M., Sanchis, J., Martínez, M. (2008).
 *A new graphical visualization of n-dimensional Pareto front for decision-making 
 in multiobjective optimization.*  
 Information Sciences, 178(20), 3908–3924.
+https://doi.org/10.1016/j.ins.2008.06.010
 
 Blasco, X., Reynoso-Meza, G., Sánchez-Pérez, E.A., Sánchez-Pérez, J.V. (2016).  
 *Asymmetric distances to improve n-dimensional Pareto fronts graphical analysis.*  
