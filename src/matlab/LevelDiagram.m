@@ -938,7 +938,7 @@ classdef LevelDiagram < handle
             subHN   = (1 - (nC+1)*marginN) / nC;
             titleHN = min(0.08, subHN * 0.18);
             tableHN = subHN - titleHN - marginN;
-            btnWN   = 0.18;   % anchura botones normalizada
+            btnWN   = 0.14;   % anchura botones normalizada
             btnHN   = titleHN * 0.85;
 
             for i = 1:nC
@@ -952,7 +952,7 @@ classdef LevelDiagram < handle
                     'Style',               'text', ...
                     'Units',               'normalized', ...
                     'Position',            [marginN, yBotN+tableHN+marginN, ...
-                                            1-3*btnWN-4*marginN, titleHN], ...
+                                            1-4*btnWN-5*marginN, titleHN], ...
                     'String',              sprintf('%s  (0 puntos)', c.name), ...
                     'FontWeight',          'bold', ...
                     'FontSize',            9, ...
@@ -963,6 +963,12 @@ classdef LevelDiagram < handle
                 % Botones alineados a la derecha, normalizados
                 btnY = yBotN + tableHN + marginN + (titleHN - btnHN)/2;
                 obj.panelButtons{i} = { ...
+                    uicontrol(obj.figPanel, ...
+                        'Style',    'pushbutton', ...
+                        'Units',    'normalized', ...
+                        'Position', [1-4*btnWN-4*marginN, btnY, btnWN, btnHN], ...
+                        'String',   'Borrar sel.', ...
+                        'Callback', @(~,~) obj.onDeleteSelectedFor(i)), ...
                     uicontrol(obj.figPanel, ...
                         'Style',    'pushbutton', ...
                         'Units',    'normalized', ...
@@ -1284,6 +1290,57 @@ classdef LevelDiagram < handle
             subset.name = varName;
             assignin('base', varName, subset);
             msgbox(sprintf('Exportado como "%s" (%d puntos).', varName, subset.nind), 'Exportación completada');
+        end
+
+        function onDeleteSelectedFor(obj, conceptIdx)
+            % Elimina los puntos seleccionados del concepto, guardándolos en workspace
+            indices = obj.getSelectionForConcept(conceptIdx);
+            if isempty(indices)
+                warndlg('No hay puntos seleccionados para este concepto.', 'Aviso');
+                return;
+            end
+            c = obj.concepts{conceptIdx};
+            answer = inputdlg('Nombre de la variable para los puntos eliminados:', ...
+                              'Guardar puntos eliminados', 1, ...
+                              {[c.name '_eliminados']});
+            if isempty(answer); return; end
+            varName = answer{1};
+            if ~isvarname(varName)
+                warndlg(sprintf('"%s" no es un nombre válido.', varName), 'Error');
+                return;
+            end
+
+            % Guardar puntos eliminados en workspace
+            deleted = c.extractSubset(indices);
+            deleted.name = varName;
+            assignin('base', varName, deleted);
+
+            % Construir máscara de puntos a conservar
+            keepMask = true(c.nind, 1);
+            keepMask(indices) = false;
+
+            % Actualizar concepto
+            obj.concepts{conceptIdx} = c.extractSubset(keepMask);
+
+            % Filtrar datos per-punto que dependen del nind original
+            if size(obj.colorData{conceptIdx}, 1) > 1
+                obj.colorData{conceptIdx} = obj.colorData{conceptIdx}(keepMask, :);
+            end
+            if numel(obj.sizeData{conceptIdx}) > 1
+                obj.sizeData{conceptIdx} = obj.sizeData{conceptIdx}(keepMask);
+            end
+            obj.sortOrder{conceptIdx} = (1:obj.concepts{conceptIdx}.nind)';
+
+            % Limpiar selección y borrar highlights (los índices ya no son válidos)
+            obj.clearSelection();
+
+            % Recalcular sync y actualizar scatters
+            obj.recalcGlobalBoundsAndSync();
+            obj.updateColors(conceptIdx);
+            obj.rebuildInfoPanel();
+
+            msgbox(sprintf('Eliminados %d puntos. Guardados como "%s" (%d puntos) en el workspace.', ...
+                           numel(indices), varName, deleted.nind), 'Puntos eliminados');
         end
 
         function onExportCSVFor(obj, conceptIdx)
