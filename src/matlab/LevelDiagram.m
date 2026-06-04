@@ -621,6 +621,52 @@ classdef LevelDiagram < handle
             obj.updateInfoPanel([]);
         end
 
+        function deletePoints(obj, concept, indices, varName)
+            % Elimina puntos de un concepto por índice y los guarda en workspace
+            %
+            % Uso:
+            %   ld.deletePoints(c1, idx)              % pide nombre por diálogo
+            %   ld.deletePoints(c1, idx, 'eliminados') % nombre directo, sin diálogo
+            %   ld.deletePoints(1, idx, 'eliminados')
+            if isa(concept, 'Concept')
+                conceptIdx = obj.getConceptIndex(concept);
+            else
+                conceptIdx = concept;
+            end
+            if nargin < 4
+                c = obj.concepts{conceptIdx};
+                answer = inputdlg('Nombre de la variable para los puntos eliminados:', ...
+                                  'Guardar puntos eliminados', 1, ...
+                                  {[c.name '_eliminados']});
+                if isempty(answer); return; end
+                varName = answer{1};
+                if ~isvarname(varName)
+                    warndlg(sprintf('"%s" no es un nombre válido.', varName), 'Error');
+                    return;
+                end
+            end
+            obj.doDeletePoints(conceptIdx, indices(:), varName);
+        end
+
+        function selectPoints(obj, concept, indices)
+            % Selecciona puntos de un concepto por índice numérico
+            %
+            % Uso:
+            %   idx = find(c1.parameters(:,8) > 0 & c1.parameters(:,10) <= 0.5);
+            %   ld.selectPoints(c1, idx)
+            %   ld.selectPoints(1, idx)
+            if isa(concept, 'Concept')
+                conceptIdx = obj.getConceptIndex(concept);
+            else
+                conceptIdx = concept;
+            end
+            obj.clearSelection();
+            if ~isempty(indices)
+                obj.mergeSelection(conceptIdx, indices(:));
+            end
+            obj.refreshHighlights();
+        end
+
         %% Utilidades
         function refreshAxes(obj)
             % Refresca los límites de todos los ejes
@@ -1293,7 +1339,7 @@ classdef LevelDiagram < handle
         end
 
         function onDeleteSelectedFor(obj, conceptIdx)
-            % Elimina los puntos seleccionados del concepto, guardándolos en workspace
+            % Botón "Borrar sel.": elimina la selección actual del concepto
             indices = obj.getSelectionForConcept(conceptIdx);
             if isempty(indices)
                 warndlg('No hay puntos seleccionados para este concepto.', 'Aviso');
@@ -1309,6 +1355,15 @@ classdef LevelDiagram < handle
                 warndlg(sprintf('"%s" no es un nombre válido.', varName), 'Error');
                 return;
             end
+            obj.doDeletePoints(conceptIdx, indices, varName);
+        end
+
+        function doDeletePoints(obj, conceptIdx, indices, varName)
+            % Lógica común de borrado: elimina indices del concepto y actualiza todo
+            if isempty(indices)
+                return;
+            end
+            c = obj.concepts{conceptIdx};
 
             % Guardar puntos eliminados en workspace
             deleted = c.extractSubset(indices);
@@ -1318,9 +1373,26 @@ classdef LevelDiagram < handle
             % Construir máscara de puntos a conservar
             keepMask = true(c.nind, 1);
             keepMask(indices) = false;
+            if ~any(keepMask)
+                warndlg(sprintf('La selección incluye todos los puntos de "%s". No se puede dejar un concepto vacío.', c.name), 'Aviso');
+                return;
+            end
 
-            % Actualizar concepto
-            obj.concepts{conceptIdx} = c.extractSubset(keepMask);
+            % Actualizar concepto (preservar nombre original)
+            kept = c.extractSubset(keepMask);
+            kept.name = c.name;
+            obj.concepts{conceptIdx} = kept;
+
+            % Actualizar variables del workspace base que referencian este concepto
+            wsVars = evalin('base', 'whos');
+            for k = 1:numel(wsVars)
+                if strcmp(wsVars(k).class, 'Concept')
+                    v = evalin('base', wsVars(k).name);
+                    if strcmp(v.name, c.name)
+                        assignin('base', wsVars(k).name, kept);
+                    end
+                end
+            end
 
             % Filtrar datos per-punto que dependen del nind original
             if size(obj.colorData{conceptIdx}, 1) > 1
@@ -1331,7 +1403,7 @@ classdef LevelDiagram < handle
             end
             obj.sortOrder{conceptIdx} = (1:obj.concepts{conceptIdx}.nind)';
 
-            % Limpiar selección y borrar highlights (los índices ya no son válidos)
+            % Limpiar selección y borrar highlights
             obj.clearSelection();
 
             % Recalcular sync y actualizar scatters
