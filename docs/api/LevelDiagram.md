@@ -336,6 +336,71 @@ Clears all highlighted points and resets the Info Panel.
 
 ---
 
+### `selectPoints`
+
+```matlab
+ld.selectPoints(concept, indices)
+```
+
+Selects points of a concept programmatically by numeric index, updating highlights and the Info Panel — equivalent to clicking points interactively.
+
+**Arguments**
+
+| Name | Type | Description |
+|---|---|---|
+| `concept` | `Concept` or `int` | Source concept object or its numeric index |
+| `indices` | `(k × 1) int` | Row indices into `concept.parameters` / `concept.objectives` |
+
+**Example**
+
+```matlab
+% Select all points where x8 > 0 and x10 <= 0.5
+idx = find(c1.parameters(:,8) > 0 & c1.parameters(:,10) <= 0.5);
+ld.selectPoints(c1, idx)
+
+% Combine with deletePoints or exportSelection afterwards
+```
+
+!!! note
+    After calling `deletePoints`, the workspace variable (`c1`) is updated automatically. Always build `indices` from the current concept data to avoid stale references.
+
+---
+
+### `deletePoints`
+
+```matlab
+ld.deletePoints(concept, indices)
+ld.deletePoints(concept, indices, varName)
+```
+
+Removes points from a concept by index, saves them as a new `Concept` in the base workspace, and updates all figures and the Info Panel. Any workspace variable whose `name` matches the concept is updated automatically to stay in sync.
+
+If `varName` is omitted an `inputdlg` is shown. If `indices` is empty, the call is silently ignored. If `indices` covers all points, a warning dialog is shown and nothing is deleted.
+
+**Arguments**
+
+| Name | Type | Description |
+|---|---|---|
+| `concept` | `Concept` or `int` | Source concept object or its numeric index |
+| `indices` | `(k × 1) int` | Row indices of the points to remove |
+| `varName` | `char` | *(optional)* Workspace variable name for the deleted points |
+
+**Example**
+
+```matlab
+% Delete points where x1 > 0, save as 'removed_x1'
+idx = find(c1.parameters(:,1) > 0);
+ld.deletePoints(c1, idx, 'removed_x1')
+
+% c1 is now updated automatically — subsequent calls use the reduced dataset
+idx2 = find(c1.parameters(:,2) > 0);
+ld.deletePoints(c1, idx2, 'removed_x2')
+```
+
+The **"Borrar sel."** button in the Info Panel performs the same operation on the current interactive selection (shows the name dialog before deleting).
+
+---
+
 ## Callbacks
 
 ### `onSelect`
