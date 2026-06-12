@@ -28,6 +28,9 @@ ld.draw();
 ld.colorBy(c1, pf1(:,1));        % colour by first objective
 ld.syncByNorm(1);                % switch to L1 norm
 ld.onSelect(c1, @myCallback);    % callback on point click
+
+% 4. Open the interactive control panel
+panel = ld.showPanel();
 ```
 
 ## Features
@@ -47,6 +50,7 @@ ld.onSelect(c1, @myCallback);    % callback on point click
 | Preference bands | Overlay staircase sectors from a preference table |
 | Export | Selection → new `Concept`, workspace variable, or CSV |
 | Callbacks | Function triggered on each selected point; `punto` includes `selectionIdx` and `selectionSize` |
+| `LDControlPanel` | Point-and-click GUI for all common LD operations: add/remove concepts, colour, size, sync, callbacks |
 
 ## Requirements
 

@@ -285,6 +285,118 @@ Changes the marker style for one concept.
 
 ---
 
+## Control panel
+
+### `showPanel`
+
+```matlab
+panel = ld.showPanel()
+```
+
+Opens the [`LDControlPanel`](LDControlPanel.md) graphical interface docked to the right of the screen.
+Returns the `LDControlPanel` handle so it can be kept alive in the workspace.
+
+**Example**
+
+```matlab
+ld = LevelDiagram('comparison');
+ld.addConcept(c1);
+ld.draw();
+panel = ld.showPanel();   % open GUI alongside the diagram
+```
+
+---
+
+## Concept introspection
+
+### `getConceptNames`
+
+```matlab
+names = ld.getConceptNames()
+```
+
+Returns a `cell array` of `char` with the name of every concept, in insertion order.
+
+---
+
+### `getConceptByName`
+
+```matlab
+concept = ld.getConceptByName(name)
+```
+
+Returns the `Concept` object whose `name` matches the given string.
+Raises an error if no matching concept is found.
+
+**Arguments**
+
+| Name | Type | Description |
+|---|---|---|
+| `name` | `char` | Exact concept name (case-sensitive) |
+
+---
+
+### `getConceptCallbacks`
+
+```matlab
+fns = ld.getConceptCallbacks(concept)
+```
+
+Returns a `cell array` of function handles registered for `concept` via `onSelect`.
+Returns an empty cell `{}` if no callbacks are registered.
+
+**Arguments**
+
+| Name | Type | Description |
+|---|---|---|
+| `concept` | `Concept` or `int` | Concept object or its numeric index |
+
+---
+
+### `getConceptColorData`
+
+```matlab
+colData = ld.getConceptColorData(concept)
+```
+
+Returns the current colour matrix `(nind × 3)` applied to `concept`.
+For a fixed colour set with `ld.colorBy(c, [r g b])`, all rows are identical.
+Useful for reading back the current colour into the control panel or for inspection.
+
+**Arguments**
+
+| Name | Type | Description |
+|---|---|---|
+| `concept` | `Concept` or `int` | Concept object or its numeric index |
+
+---
+
+### `setConceptLabels`
+
+```matlab
+ld.setConceptLabels(concept, objLabels)
+ld.setConceptLabels(concept, objLabels, parLabels)
+```
+
+Sets objective and/or parameter labels for a concept.
+Validates that the number of labels matches the concept dimensions.
+
+**Arguments**
+
+| Name | Type | Description |
+|---|---|---|
+| `concept` | `Concept` or `int` | Concept object or its numeric index |
+| `objLabels` | `cell of char` | Label for each objective (length must equal `pfdim`) |
+| `parLabels` | `cell of char` | *(optional)* Label for each parameter (length must equal `psdim`) |
+
+**Example**
+
+```matlab
+ld.setConceptLabels(c1, {'IAE','TV','MS'}, {'Kp','Ti','Td'});
+```
+
+---
+
 ## Drawing
 
 ### `draw`
@@ -397,7 +509,30 @@ idx2 = find(c1.parameters(:,2) > 0);
 ld.deletePoints(c1, idx2, 'removed_x2')
 ```
 
-The **"Borrar sel."** button in the Info Panel performs the same operation on the current interactive selection (shows the name dialog before deleting).
+The **"Delete sel."** button in the Info Panel performs the same operation on the current interactive selection (shows the name dialog before deleting).
+
+---
+
+### `deleteSelection`
+
+```matlab
+ld.deleteSelection(concept)
+```
+
+Programmatic equivalent of the **"Delete sel."** button: removes the points currently selected for `concept`, shows the name dialog to save the deleted points to the workspace, and updates all figures.
+
+**Arguments**
+
+| Name | Type | Description |
+|---|---|---|
+| `concept` | `Concept` or `int` | Concept object or its numeric index |
+
+**Example**
+
+```matlab
+ld.selectPoints(c1, find(c1.parameters(:,1) > 0.5));
+ld.deleteSelection(c1);   % same as clicking "Delete sel." in the Info Panel
+```
 
 ---
 
@@ -409,7 +544,7 @@ The **"Borrar sel."** button in the Info Panel performs the same operation on th
 ld.onSelect(concept, callback)
 ```
 
-Registers a function to be called when points of `concept` are executed via the **"Ejecutar"** button in the Info Panel.
+Registers a function to be called when points of `concept` are executed via the **"Run"** button in the Info Panel.
 
 **Callback signature**
 

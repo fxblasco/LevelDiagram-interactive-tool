@@ -683,6 +683,84 @@ classdef LevelDiagram < handle
                     i, obj.concepts{i}.name, obj.concepts{i}.nind);
             end
         end
+
+        %% Panel de control
+
+        function panel = showPanel(obj)
+            % Abre el panel de control interactivo para este LevelDiagram.
+            %
+            % Uso:
+            %   ld.showPanel()
+            %   panel = ld.showPanel()   % para guardar referencia al panel
+            panel = LDControlPanel(obj);
+        end
+
+        function names = getConceptNames(obj)
+            % Devuelve los nombres de todos los conceptos añadidos.
+            names = cellfun(@(c) c.name, obj.concepts, 'UniformOutput', false);
+        end
+
+        function concept = getConceptByName(obj, name)
+            % Devuelve el objeto Concept con ese nombre.
+            % Lanza error si no existe.
+            idx = find(strcmp(cellfun(@(c) c.name, obj.concepts, ...
+                'UniformOutput', false), name), 1);
+            if isempty(idx)
+                error('LevelDiagram:getConceptByName:notFound', ...
+                    'No existe ningún concepto con el nombre "%s".', name);
+            end
+            concept = obj.concepts{idx};
+        end
+
+        function fns = getConceptCallbacks(obj, concept)
+            % Devuelve cell array de function handles registrados para el concepto.
+            if isa(concept, 'Concept')
+                idx = obj.getConceptIndex(concept);
+            else
+                idx = concept;
+            end
+            fns = {};
+            for k = 1:numel(obj.callbacks)
+                if obj.callbacks{k}.conceptIdx == idx
+                    fns{end+1} = obj.callbacks{k}.func; %#ok<AGROW>
+                end
+            end
+        end
+
+        function colData = getConceptColorData(obj, concept)
+            % Returns the current color matrix (nind×3) for the concept.
+            if isa(concept, 'Concept'); idx = obj.getConceptIndex(concept);
+            else; idx = concept; end
+            colData = obj.colorData{idx};
+        end
+
+        function setConceptLabels(obj, concept, objLabels, parLabels)
+            % Sets objective and/or parameter labels for a concept.
+            % objLabels, parLabels: cell arrays of char/string.
+            idx = obj.getConceptIndex(concept);
+            newLabels = obj.concepts{idx}.labels;
+            if nargin >= 3 && ~isempty(objLabels)
+                newLabels.objectives = objLabels;
+            end
+            if nargin >= 4 && ~isempty(parLabels)
+                newLabels.parameters = parLabels;
+            end
+            obj.concepts{idx}.labels = newLabels;
+        end
+
+        function deleteSelection(obj, concept)
+            % Elimina los puntos actualmente seleccionados de un concepto.
+            % Equivalente al botón "Borrar sel." del panel de información.
+            %
+            % Uso:
+            %   ld.deleteSelection(c1)
+            if isa(concept, 'Concept')
+                conceptIdx = obj.getConceptIndex(concept);
+            else
+                conceptIdx = concept;
+            end
+            obj.onDeleteSelectedFor(conceptIdx);
+        end
     end
 
     methods (Access = private)
@@ -999,7 +1077,7 @@ classdef LevelDiagram < handle
                     'Units',               'normalized', ...
                     'Position',            [marginN, yBotN+tableHN+marginN, ...
                                             1-4*btnWN-5*marginN, titleHN], ...
-                    'String',              sprintf('%s  (0 puntos)', c.name), ...
+                    'String',              sprintf('%s  (0 pts)', c.name), ...
                     'FontWeight',          'bold', ...
                     'FontSize',            9, ...
                     'BackgroundColor',     bgColor, ...
@@ -1013,13 +1091,13 @@ classdef LevelDiagram < handle
                         'Style',    'pushbutton', ...
                         'Units',    'normalized', ...
                         'Position', [1-4*btnWN-4*marginN, btnY, btnWN, btnHN], ...
-                        'String',   'Borrar sel.', ...
+                        'String',   'Delete sel.', ...
                         'Callback', @(~,~) obj.onDeleteSelectedFor(i)), ...
                     uicontrol(obj.figPanel, ...
                         'Style',    'pushbutton', ...
                         'Units',    'normalized', ...
                         'Position', [1-3*btnWN-3*marginN, btnY, btnWN, btnHN], ...
-                        'String',   '> Ejecutar', ...
+                        'String',   '> Run', ...
                         'Callback', @(~,~) obj.onRunCallbacksFor(i)), ...
                     uicontrol(obj.figPanel, ...
                         'Style',    'pushbutton', ...
@@ -1222,7 +1300,7 @@ classdef LevelDiagram < handle
             for i = 1:numel(obj.panelTables)
                 if ~isempty(obj.panelTables{i}) && isvalid(obj.panelTables{i})
                     obj.panelTables{i}.Data = {};
-                    obj.panelLabels{i}.String = sprintf('%s  (0 puntos)', ...
+                    obj.panelLabels{i}.String = sprintf('%s  (0 pts)', ...
                         obj.concepts{i}.name);
                 end
             end
@@ -1241,7 +1319,7 @@ classdef LevelDiagram < handle
                 if isempty(indices); continue; end
 
                 % Actualizar título
-                obj.panelLabels{ci}.String = sprintf('%s  (%d puntos seleccionados)', ...
+                obj.panelLabels{ci}.String = sprintf('%s  (%d pts selected)', ...
                     c.name, numel(indices));
 
                 % Construir filas como cell array (figure clásico)
