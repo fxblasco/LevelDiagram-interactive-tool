@@ -23,6 +23,7 @@ Pareto fronts using the **Level Diagram** technique.
 - Concept visibility toggle (checkbox) hides the concept from all figures including the Info Panel
 - Export selection to workspace or CSV
 - Register callbacks triggered on point selection; `punto` struct includes `selectionIdx` and `selectionSize`
+- `LDControlPanel` — point-and-click GUI for all common operations (add/remove concepts, colour, size, sync, callbacks) without writing code
 
 ## Project structure
 
@@ -39,7 +40,8 @@ ldtool2026/
 │       ├── drawPrefBands.m           # Draw preference sectors on LD figures
 │       ├── gppl.m                    # Global Physical Programming index (piecewise-linear)
 │       ├── plotGPPScale.m            # Plot GPP normalisation scale per objective
-│       └── qualityIndicator.m        # Per-point Q indicator for Pareto front comparison (Reynoso-Meza 2013)
+│       ├── qualityIndicator.m        # Per-point Q indicator for Pareto front comparison (Reynoso-Meza 2013)
+│       └── LDControlPanel.m          # Interactive GUI panel for LevelDiagram (uifigure-based)
 └── test/                       # Examples — see each subfolder for a README
     ├── comparingConcepts/            # Core LevelDiagram features: multiple concepts, coloring, sync
     └── ACCbenchmark/                 # Real-world example: 6-objective controller design
