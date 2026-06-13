@@ -550,6 +550,24 @@ classdef LevelDiagram < handle
             end
         end
 
+        function closeAllFigures(obj)
+            % Cierra todas las figuras abiertas del Level Diagram
+            if ~isempty(obj.figObjectives) && isvalid(obj.figObjectives)
+                close(obj.figObjectives);
+            end
+            obj.figObjectives = [];
+            for i = 1:numel(obj.figsParameters)
+                if ~isempty(obj.figsParameters{i}) && isvalid(obj.figsParameters{i})
+                    close(obj.figsParameters{i});
+                end
+            end
+            obj.figsParameters = {};
+            if ~isempty(obj.figPanel) && isvalid(obj.figPanel)
+                close(obj.figPanel);
+            end
+            obj.figPanel = [];
+        end
+
         %% Dibujar
         function draw(obj)
             % Dibuja el Level Diagram completo
@@ -558,6 +576,22 @@ classdef LevelDiagram < handle
                 error('LevelDiagram:draw:noConcepts', ...
                     'No concepts have been added to the Level Diagram.');
             end
+
+            % Cerrar figuras existentes antes de redibujar
+            if ~isempty(obj.figObjectives) && isvalid(obj.figObjectives)
+                close(obj.figObjectives);
+            end
+            obj.figObjectives = [];
+            for i = 1:numel(obj.figsParameters)
+                if ~isempty(obj.figsParameters{i}) && isvalid(obj.figsParameters{i})
+                    close(obj.figsParameters{i});
+                end
+            end
+            obj.figsParameters = {};
+            if ~isempty(obj.figPanel) && isvalid(obj.figPanel)
+                close(obj.figPanel);
+            end
+            obj.figPanel = [];
 
             % Calcular layout de figuras antes de crearlas
             nFigs    = 1 + numel(obj.concepts) + 1; % obj + params + panel
@@ -665,6 +699,23 @@ classdef LevelDiagram < handle
                 obj.mergeSelection(conceptIdx, indices(:));
             end
             obj.refreshHighlights();
+        end
+
+        function addToSelection(obj, concept, indices)
+            % Añade puntos a la selección existente de un concepto (unión)
+            %
+            % Uso:
+            %   idx = find(c1.parameters(:,8) > 0);
+            %   ld.addToSelection(c1, idx)
+            if isa(concept, 'Concept')
+                conceptIdx = obj.getConceptIndex(concept);
+            else
+                conceptIdx = concept;
+            end
+            if ~isempty(indices)
+                obj.mergeSelection(conceptIdx, indices(:));
+                obj.refreshHighlights();
+            end
         end
 
         %% Utilidades

@@ -67,16 +67,20 @@ classdef LDControlPanel < handle
         edtName
         ddPF
         ddPS
+        ddWsConcept     % Concept objects available in base workspace
         btnAdd
         btnDraw
 
         % — SINCRONIZACIÓN —
+        pnlSync         % Y-AXIS SYNC section panel (resizes dynamically)
+        pnlSyncHeader   % sub-panel holding Type dropdown + Reset (moves up with rows)
         ddSyncType
         pnlLp           % sub-panel Norm
         edtP
-        pnlWs           % sub-panel Workspace (dynamic rows)
+        pnlWs           % sub-panel Workspace (dynamic rows, resizes dynamically)
 
         % — CONCEPTO ACTIVO —
+        pnlConcepts     % CONCEPTS section panel (repositioned by updateSyncLayout)
         ddConcept
 
         % — COLOR —
@@ -92,6 +96,13 @@ classdef LDControlPanel < handle
         btnColorPicker  % colored button that opens uisetcolor
         edtRgb          % RGB text field for uniform color
         uniformColor    % current uniform RGB color [1x3]
+
+        % — SELECCIÓN —
+        ddSelType       % Objectives / Parameters
+        ddSelVar        % column label dropdown
+        ddSelOp         % operator dropdown
+        edtSelVal       % numeric threshold
+        ddSelIdx        % workspace index vector dropdown
 
         % — CALLBACKS —
         lblCurrentCb    % shows currently registered callback
@@ -146,10 +157,10 @@ classdef LDControlPanel < handle
                 figTitle = sprintf('LD Controls — %s', ldName);
             end
 
-            % Posicionar en el lado derecho de la pantalla
-            panelW = 310; panelH = 920;
+            % Centrar el panel en pantalla
+            panelW = 360; panelH = 718;
             ss     = get(0, 'ScreenSize');
-            xPos   = ss(3) - panelW - 20;
+            xPos   = round((ss(3) - panelW) / 2);
             yPos   = max(10, round((ss(4) - panelH) / 2));
 
             obj.fig = uifigure( ...
@@ -157,14 +168,11 @@ classdef LDControlPanel < handle
                 'Position', [xPos yPos panelW panelH], ...
                 'Resize',   'off');
 
-            M = 8; W = 294;
-            obj.buildRefreshButton(   M,   5, W);
-            obj.buildCallbackSection( M,  36, W);
-            obj.buildSizeSection(     M, 151, W);
-            obj.buildColorSection(    M, 294, W);
-            obj.buildConceptSelector( M, 499, W);
-            obj.buildSyncSection(     M, 552, W);
-            obj.buildConceptsSection( M, 669, W);
+            M = 8; W = 344;
+            obj.buildRefreshButton(     M,   5, W);
+            obj.buildConceptOpsSection( M,  36, W);
+            obj.buildSyncSection(       M, 306, W);
+            obj.buildConceptsSection(   M, 432, W);
         end
 
         % -----------------------------------------------------------------
@@ -172,200 +180,251 @@ classdef LDControlPanel < handle
         % -----------------------------------------------------------------
         function buildConceptsSection(obj, x, y, W)
             pnl = uipanel(obj.fig, 'Title', 'CONCEPTS', ...
-                'FontWeight', 'bold', 'Position', [x y W 238]);
+                'FontWeight', 'bold', 'Position', [x y W 268]);
+            obj.pnlConcepts = pnl;
 
             obj.lstConcepts = uilistbox(pnl, ...
-                'Position', [5 167 280 46], ...
+                'Position', [5 197 W-14 46], ...
                 'Items', {}, 'Multiselect', 'off');
 
             uibutton(pnl, 'Text', '✎ Edit labels...', ...
-                'Position', [5 141 280 22], ...
+                'Position', [5 171 W-14 22], ...
                 'Tooltip', 'Set objective and parameter labels for the selected concept', ...
                 'ButtonPushedFcn', @(~,~) obj.onEditLabels());
 
-            uilabel(pnl, 'Text', 'Name', 'Position', [5 115 42 20]);
+            uilabel(pnl, 'Text', 'Name', 'Position', [5 145 42 20]);
             obj.edtName = uieditfield(pnl, 'text', ...
-                'Position', [52 115 228 22], 'Value', 'new');
+                'Position', [52 145 W-62 22], 'Value', 'new');
 
-            uilabel(pnl, 'Text', 'PF', 'Position', [5 88 20 20]);
+            uilabel(pnl, 'Text', 'PF', 'Position', [5 118 20 20]);
             obj.ddPF = uidropdown(pnl, ...
-                'Position', [30 88 228 22], 'Items', {'(refresh ↺)'});
-            uibutton(pnl, 'Text', '↺', 'Position', [263 88 22 22], ...
+                'Position', [30 118 W-61 22], 'Items', {'(refresh ↺)'});
+            uibutton(pnl, 'Text', '↺', 'Position', [W-26 118 22 22], ...
                 'Tooltip', 'Refresh workspace matrices', ...
                 'ButtonPushedFcn', @(~,~) obj.refreshWorkspaceMatrices());
 
-            uilabel(pnl, 'Text', 'PS', 'Position', [5 63 20 20]);
+            uilabel(pnl, 'Text', 'PS', 'Position', [5 93 20 20]);
             obj.ddPS = uidropdown(pnl, ...
-                'Position', [30 63 255 22], 'Items', {'(refresh ↺)'});
+                'Position', [30 93 W-40 22], 'Items', {'(refresh ↺)'});
 
             uibutton(pnl, 'Text', '✕ Remove selected', ...
-                'Position', [5 36 148 22], ...
+                'Position', [5 66 148 22], ...
                 'Tooltip', 'Remove the selected concept from the LD', ...
                 'ButtonPushedFcn', @(~,~) obj.onRemoveConcept());
             uibutton(pnl, 'Text', 'Clear all', ...
-                'Position', [158 36 127 22], ...
+                'Position', [158 66 W-172 22], ...
                 'Tooltip', 'Remove all concepts from the LD', ...
                 'ButtonPushedFcn', @(~,~) obj.onClearAllConcepts());
 
             obj.btnAdd = uibutton(pnl, 'Text', '+ Add concept', ...
-                'Position', [5 5 148 26], ...
+                'Position', [5 35 148 26], ...
                 'ButtonPushedFcn', @(~,~) obj.onAddConcept());
             obj.btnDraw = uibutton(pnl, 'Text', '▶ Draw', ...
-                'Position', [158 5 127 26], ...
+                'Position', [158 35 W-172 26], ...
                 'BackgroundColor', [0.18 0.55 0.18], ...
                 'FontColor', [1 1 1], ...
                 'ButtonPushedFcn', @(~,~) obj.onDraw());
+
+            % ── Load existing Concept from workspace ──────────────────────
+            uilabel(pnl, 'Text', 'WS:', 'Position', [5 8 28 20], ...
+                'Tooltip', 'Select a workspace Concept and click "+ Add concept"');
+            obj.ddWsConcept = uidropdown(pnl, ...
+                'Position', [38 5 W-76 22], 'Items', {'(none)'}, ...
+                'Tooltip', 'Concept objects in the base workspace — overrides PF/PS when selected');
+            uibutton(pnl, 'Text', '↺', 'Position', [W-33 5 22 22], ...
+                'Tooltip', 'Refresh workspace Concept objects', ...
+                'ButtonPushedFcn', @(~,~) obj.refreshWorkspaceConcepts());
         end
 
         % -----------------------------------------------------------------
         % SECCIÓN: SINCRONIZACIÓN EJE Y
         % -----------------------------------------------------------------
         function buildSyncSection(obj, x, y, W)
-            pnl = uipanel(obj.fig, 'Title', 'Y-AXIS SYNC', ...
-                'FontWeight', 'bold', 'Position', [x y W 112]);
+            % Height for Norm mode: 5 (bottom) + 58 (subH) + 8 (gap) + 24 (header) + 26 (title) = 121
+            obj.pnlSync = uipanel(obj.fig, 'Title', 'Y-AXIS SYNC', ...
+                'FontWeight', 'bold', 'Position', [x y W 121]);
 
-            % Top row: type + Reset (always visible)
-            uilabel(pnl, 'Text', 'Type', 'Position', [5 68 30 20]);
-            obj.ddSyncType = uidropdown(pnl, ...
-                'Position', [40 68 175 22], ...
+            % Header sub-panel: 4px margin each side to avoid clipping panel borders.
+            % Positioned 8px above the content sub-panel; stays below the panel title.
+            obj.pnlSyncHeader = uipanel(obj.pnlSync, 'BorderType', 'none', ...
+                'Position', [4 71 W-8 24]);
+            uilabel(obj.pnlSyncHeader, 'Text', 'Type', 'Position', [5 2 30 20]);
+            obj.ddSyncType = uidropdown(obj.pnlSyncHeader, ...
+                'Position', [40 2 W-160 22], ...
                 'Items', {'Norm', 'Workspace'}, ...
                 'ValueChangedFcn', @(~,~) obj.onSyncTypeChanged());
-            uibutton(pnl, 'Text', 'Reset bounds', ...
-                'Position', [220 68 68 22], ...
+            uibutton(obj.pnlSyncHeader, 'Text', 'Reset bounds', ...
+                'Position', [W-115 2 110 22], ...
                 'ButtonPushedFcn', @(~,~) obj.onSyncReset());
 
-            % Two sub-panels at the same position; only one visible at a time.
-            subX = 4; subW = 282; subY = 5; subH = 58;
+            % Sub-panels: both anchored at y=5; only one visible at a time.
+            subX = 4; subW = W - 8; subY = 5; subH = 58;
 
-            % ··· Sub-panel: Norm (visible by default) ·····················
-            obj.pnlLp = uipanel(pnl, 'BorderType', 'none', ...
+            % ··· Sub-panel: Norm ··········································
+            obj.pnlLp = uipanel(obj.pnlSync, 'BorderType', 'none', ...
                 'Position', [subX subY subW subH]);
             uilabel(obj.pnlLp, 'Text', 'p =', 'Position', [5 18 25 20]);
             obj.edtP = uieditfield(obj.pnlLp, 'numeric', ...
                 'Position', [35 18 55 22], 'Value', 2, 'Limits', [1 Inf]);
             uibutton(obj.pnlLp, 'Text', 'Apply', ...
-                'Position', [100 18 174 22], ...
+                'Position', [100 18 subW-108 22], ...
                 'ButtonPushedFcn', @(~,~) obj.onSyncApply());
 
             % ··· Sub-panel: Workspace (dynamic rows) ······················
-            % Apply button has fixed Tag; rebuildSyncWsPanel only deletes
-            % elements whose Tag starts with 'wsrow_'.
-            obj.pnlWs = uipanel(pnl, 'BorderType', 'none', ...
+            % Apply button tag is fixed; rebuildSyncWsPanel deletes 'wsrow_*' children.
+            obj.pnlWs = uipanel(obj.pnlSync, 'BorderType', 'none', ...
                 'Position', [subX subY subW subH], 'Visible', 'off');
-            uibutton(obj.pnlWs, 'Text', 'Apply', ...
-                'Position', [180 5 98 22], 'Tag', 'ws_aplicar', ...
+            uibutton(obj.pnlWs, 'Text', 'Apply sync', ...
+                'Position', [subW-110 5 106 22], 'Tag', 'ws_aplicar', ...
                 'ButtonPushedFcn', @(~,~) obj.onSyncApply());
         end
 
         % -----------------------------------------------------------------
-        % SECCIÓN: CONCEPTO ACTIVO (selector)
+        % SECCIÓN: CONCEPTO ACTIVO + TABS DE OPERACIONES
         % -----------------------------------------------------------------
-        function buildConceptSelector(obj, x, y, W)
+        function buildConceptOpsSection(obj, x, y, W)
+            % One section containing the active-concept selector and a tab
+            % group for the four operation types (Selection / Color / Size / Callback).
+            % Layout (inner y from bottom of panel):
+            %   y=5   : tab group (h=210)
+            %   y=220 : active concept dropdown
+            %   y=242+: panel title area
             pnl = uipanel(obj.fig, 'Title', 'ACTIVE CONCEPT', ...
-                'FontWeight', 'bold', 'Position', [x y W 48]);
+                'FontWeight', 'bold', 'Position', [x y W 265]);
+
+            uilabel(pnl, 'Text', 'Concept:', ...
+                'Position', [5 222 58 20], 'FontWeight', 'bold');
             obj.ddConcept = uidropdown(pnl, ...
-                'Position', [5 4 280 22], ...
+                'Position', [68 220 W-76 24], ...
                 'Items', {'(no concepts)'}, ...
+                'BackgroundColor', [0.92 0.97 1.0], ...
                 'ValueChangedFcn', @(~,~) obj.onConceptChanged());
+
+            tg = uitabgroup(pnl, 'Position', [2 5 W-4 210]);
+
+            obj.buildSelectionTab( uitab(tg, 'Title', 'Selection') );
+            obj.buildColorTab(     uitab(tg, 'Title', 'Color') );
+            obj.buildSizeTab(      uitab(tg, 'Title', 'Size && Marker') );
+            obj.buildCallbackTab(  uitab(tg, 'Title', 'Callback') );
         end
 
-        % -----------------------------------------------------------------
-        % SECCIÓN: COLOR
-        % -----------------------------------------------------------------
-        function buildColorSection(obj, x, y, W)
-            pnl = uipanel(obj.fig, 'Title', 'COLOR', ...
-                'FontWeight', 'bold', 'Position', [x y W 200]);
+        function buildSelectionTab(obj, t)
+            obj.ddSelType = uidropdown(t, ...
+                'Position', [5 90 85 22], ...
+                'Items', {'Objectives', 'Parameters'}, ...
+                'ValueChangedFcn', @(~,~) obj.onSelTypeChanged());
+            obj.ddSelVar = uidropdown(t, ...
+                'Position', [95 90 208 22], 'Items', {'(no concepts)'});
+            uibutton(t, 'Text', '↺', 'Position', [308 90 22 22], ...
+                'Tooltip', 'Refresh variable list', ...
+                'ButtonPushedFcn', @(~,~) obj.refreshSelectionVars());
 
-            % Color variable row — y=152 keeps it below the title bar
-            uilabel(pnl, 'Text', 'According to', 'Position', [5 152 80 20]);
-            obj.ddColorVar = uidropdown(pnl, ...
-                'Position', [90 152 172 22], ...
+            obj.ddSelOp = uidropdown(t, ...
+                'Position', [5 64 50 22], ...
+                'Items', {'>', '<', '>=', '<=', '==', '~='});
+            obj.edtSelVal = uieditfield(t, 'numeric', ...
+                'Position', [60 64 52 22], 'Value', 0);
+            uibutton(t, 'Text', 'Select', ...
+                'Position', [117 64 68 22], ...
+                'Tooltip', 'Replace selection with matching points', ...
+                'ButtonPushedFcn', @(~,~) obj.onSelectByCondition());
+            uibutton(t, 'Text', '+ Add to sel.', ...
+                'Position', [190 64 140 22], ...
+                'Tooltip', 'Add matching points to current selection', ...
+                'ButtonPushedFcn', @(~,~) obj.onAddToSelection());
+
+            uibutton(t, 'Text', 'Clear selection', ...
+                'Position', [5 38 325 22], ...
+                'ButtonPushedFcn', @(~,~) obj.onClearSelection());
+
+            uilabel(t, 'Text', 'WS idx:', 'Position', [5 10 48 20], ...
+                'Tooltip', 'Pass an index vector from the workspace');
+            obj.ddSelIdx = uidropdown(t, ...
+                'Position', [58 8 210 22], 'Items', {'(refresh ↺)'}, ...
+                'Tooltip', 'Numeric index vector from the workspace');
+            uibutton(t, 'Text', '↺', 'Position', [273 8 22 22], ...
+                'Tooltip', 'Refresh workspace index vectors', ...
+                'ButtonPushedFcn', @(~,~) obj.refreshSelectionIdxVars());
+            uibutton(t, 'Text', 'Use', 'Position', [300 8 30 22], ...
+                'Tooltip', 'Select points using this index vector', ...
+                'ButtonPushedFcn', @(~,~) obj.onSelectFromWS());
+        end
+
+        function buildColorTab(obj, t)
+            uilabel(t, 'Text', 'According to', 'Position', [5 152 80 20]);
+            obj.ddColorVar = uidropdown(t, ...
+                'Position', [90 152 214 22], ...
                 'Items', {'(no concepts)'}, ...
                 'ValueChangedFcn', @(~,~) obj.onColorVarModeChanged());
-            uibutton(pnl, 'Text', '↺', 'Position', [267 152 22 22], ...
+            uibutton(t, 'Text', '↺', 'Position', [309 152 22 22], ...
                 'Tooltip', 'Refresh workspace variables', ...
                 'ButtonPushedFcn', @(~,~) obj.refreshColorVars());
 
-            % ··· Sub-panel: colormap mode (visible by default) ············
-            % h=110 keeps top (38+110=148) below the "According to" row (y=152)
-            obj.pnlColorMap = uipanel(pnl, 'BorderType', 'none', ...
-                'Position', [4 38 282 110]);
+            obj.pnlColorMap = uipanel(t, 'BorderType', 'none', ...
+                'Position', [4 38 326 110]);
             uilabel(obj.pnlColorMap, 'Text', 'Colormap', 'Position', [1 84 58 20]);
             obj.ddColormap = uidropdown(obj.pnlColorMap, ...
-                'Position', [64 84 218 22], ...
+                'Position', [64 84 260 22], ...
                 'Items', {'parula','jet','hot','cool','gray','turbo','winter','summer','copper'});
             obj.chkRevColor = uicheckbox(obj.pnlColorMap, ...
                 'Text', 'Invert colormap', 'Position', [1 62 130 20]);
-            obj.axColorPreview = uiaxes(obj.pnlColorMap, 'Position', [1 28 280 26]);
+            obj.axColorPreview = uiaxes(obj.pnlColorMap, 'Position', [1 28 322 26]);
             obj.axColorPreview.XTick = []; obj.axColorPreview.YTick = [];
             obj.axColorPreview.XLim  = [0 1]; obj.axColorPreview.YLim = [0 1];
             disableDefaultInteractivity(obj.axColorPreview);
             obj.updateColormapPreview('parula');
             uilabel(obj.pnlColorMap, 'Text', 'min', 'Position', [1 8 25 16], ...
                 'FontSize', 9, 'FontColor', [0.5 0.5 0.5]);
-            uilabel(obj.pnlColorMap, 'Text', 'max', 'Position', [257 8 28 16], ...
+            uilabel(obj.pnlColorMap, 'Text', 'max', 'Position', [299 8 28 16], ...
                 'FontSize', 9, 'FontColor', [0.5 0.5 0.5], 'HorizontalAlignment', 'right');
 
-            % ··· Sub-panel: uniform color mode (hidden by default) ········
-            obj.pnlColorUnif = uipanel(pnl, 'BorderType', 'none', ...
-                'Position', [4 38 282 110], 'Visible', 'off');
+            obj.pnlColorUnif = uipanel(t, 'BorderType', 'none', ...
+                'Position', [4 38 326 110], 'Visible', 'off');
             uilabel(obj.pnlColorUnif, 'Text', 'Palette', 'Position', [1 82 42 20]);
             obj.btnColorPicker = uibutton(obj.pnlColorUnif, ...
-                'Text', 'Pick color...', 'Position', [48 80 228 24], ...
+                'Text', 'Pick color...', 'Position', [48 80 274 24], ...
                 'BackgroundColor', obj.uniformColor, ...
                 'Tooltip', 'Open color picker dialog', ...
                 'ButtonPushedFcn', @(~,~) obj.onPickColor());
             uilabel(obj.pnlColorUnif, 'Text', 'RGB', 'Position', [1 52 30 20]);
             obj.edtRgb = uieditfield(obj.pnlColorUnif, 'text', ...
-                'Position', [36 52 240 22], ...
+                'Position', [36 52 286 22], ...
                 'Value', obj.rgb2str(obj.uniformColor), ...
                 'Placeholder', 'e.g.  0.2  0.5  0.8', ...
                 'Tooltip', 'Type three values 0–1 separated by spaces', ...
                 'ValueChangedFcn', @(~,~) obj.onRgbEdit());
 
-            % Apply button (always visible)
-            uibutton(pnl, 'Text', 'Apply color', ...
-                'Position', [5 8 280 24], ...
+            uibutton(t, 'Text', 'Apply color', ...
+                'Position', [5 8 326 24], ...
                 'ButtonPushedFcn', @(~,~) obj.onColorApply());
         end
 
-        % -----------------------------------------------------------------
-        % SECCIÓN: TAMAÑO Y MARCADOR
-        % -----------------------------------------------------------------
-        function buildSizeSection(obj, x, y, W)
-            pnl = uipanel(obj.fig, 'Title', 'SIZE AND MARKER', ...
-                'FontWeight', 'bold', 'Position', [x y W 138]);
-
-            % Size variable
-            uilabel(pnl, 'Text', 'Variable', 'Position', [5 95 52 20]);
-            obj.ddSizeVar = uidropdown(pnl, ...
-                'Position', [62 95 200 22], ...
+        function buildSizeTab(obj, t)
+            uilabel(t, 'Text', 'Variable', 'Position', [5 95 52 20]);
+            obj.ddSizeVar = uidropdown(t, ...
+                'Position', [62 95 246 22], ...
                 'Items', {'Uniform'}, ...
                 'ValueChangedFcn', @(~,~) obj.onSizeVarChanged());
-            uibutton(pnl, 'Text', '↺', 'Position', [267 95 22 22], ...
+            uibutton(t, 'Text', '↺', 'Position', [313 95 22 22], ...
                 'Tooltip', 'Refresh workspace variables', ...
                 'ButtonPushedFcn', @(~,~) obj.refreshSizeVars());
 
-            % Sub-panel: Uniforme (slider)
-            obj.pnlSizeUnif = uipanel(pnl, 'BorderType', 'none', ...
-                'Position', [4 42 282 50]);
+            obj.pnlSizeUnif = uipanel(t, 'BorderType', 'none', ...
+                'Position', [4 42 328 50]);
             obj.sldSize = uislider(obj.pnlSizeUnif, ...
-                'Position', [8 30 210 3], ...
-                'Limits', [1 150], 'Value', 36, ...
-                'MajorTicks', [1 50 100 150], ...
-                'MinorTicks', [], ...
+                'Position', [8 30 256 3], ...
+                'Limits', [1 200], 'Value', 36, ...
+                'MajorTicks', [1 50 100 150 200], 'MinorTicks', [], ...
                 'ValueChangedFcn', @(src,~) obj.onSizeSlider(src));
             obj.edtSize = uieditfield(obj.pnlSizeUnif, 'numeric', ...
-                'Position', [230 22 47 22], 'Value', 36, ...
-                'Limits', [1 150], ...
+                'Position', [276 22 47 22], 'Value', 36, 'Limits', [1 200], ...
                 'ValueChangedFcn', @(src,~) obj.onSizeEdit(src));
             uilabel(obj.pnlSizeUnif, 'Text', 'pts', ...
-                'Position', [230 5 35 16], 'FontSize', 9, ...
+                'Position', [276 5 35 16], 'FontSize', 9, ...
                 'FontColor', [0.5 0.5 0.5]);
 
-            % Sub-panel: Variable (rango de pts)
-            obj.pnlSizeVar = uipanel(pnl, 'BorderType', 'none', ...
-                'Position', [4 42 282 50], 'Visible', 'off');
+            obj.pnlSizeVar = uipanel(t, 'BorderType', 'none', ...
+                'Position', [4 42 328 50], 'Visible', 'off');
             uilabel(obj.pnlSizeVar, 'Text', 'Range pts', 'Position', [5 24 65 20]);
             obj.edtSizeMin = uieditfield(obj.pnlSizeVar, 'numeric', ...
                 'Position', [75 24 55 22], 'Value', 10, ...
@@ -378,15 +437,39 @@ classdef LDControlPanel < handle
                 'Position', [213 24 28 20], 'FontSize', 9, ...
                 'FontColor', [0.5 0.5 0.5]);
 
-            % Marker
-            uilabel(pnl, 'Text', 'Marker', 'Position', [5 12 58 20]);
-            obj.ddMarker = uidropdown(pnl, ...
-                'Position', [68 12 221 22], ...
+            uilabel(t, 'Text', 'Marker', 'Position', [5 12 58 20]);
+            obj.ddMarker = uidropdown(t, ...
+                'Position', [68 12 267 22], ...
                 'Items', {'○  Circle','□  Square','△  Triangle', ...
                           '◇  Diamond','▽  Inv. triangle'}, ...
                 'ValueChangedFcn', @(~,~) obj.onMarkerChanged());
         end
 
+        function buildCallbackTab(obj, t)
+            uilabel(t, 'Text', 'Current:', ...
+                'Position', [5 68 48 18], 'FontSize', 9, ...
+                'FontColor', [0.4 0.4 0.4]);
+            obj.lblCurrentCb = uilabel(t, 'Text', '(none)', ...
+                'Position', [58 65 268 22], ...
+                'FontSize', 9, 'FontColor', [0.25 0.25 0.25], ...
+                'WordWrap', 'on', 'Interpreter', 'none');
+
+            obj.edtCbFn = uieditfield(t, 'text', ...
+                'Position', [5 38 298 22], 'Value', '', ...
+                'Placeholder', 'myFunction  or  @(p) expr', ...
+                'Tooltip', 'Function name or @-expression. Use [...] to browse a .m file.');
+            obj.btnCbBrowse = uibutton(t, 'Text', '...', ...
+                'Position', [308 38 22 22], ...
+                'Tooltip', 'Browse for a .m file', ...
+                'ButtonPushedFcn', @(~,~) obj.onCbBrowse());
+
+            obj.btnAssignCb = uibutton(t, 'Text', '+ Assign', ...
+                'Position', [5 8 130 24], ...
+                'ButtonPushedFcn', @(~,~) obj.onAssignCallback());
+            obj.btnClearCb = uibutton(t, 'Text', 'Remove callbacks', ...
+                'Position', [142 8 188 24], ...
+                'ButtonPushedFcn', @(~,~) obj.onClearCallbacks());
+        end
 
         % -----------------------------------------------------------------
         % BOTÓN DE REFRESCO (pie del panel, siempre visible)
@@ -397,43 +480,6 @@ classdef LDControlPanel < handle
                 'Position',        [x y W 26], ...
                 'BackgroundColor', [0.94 0.94 0.94], ...
                 'ButtonPushedFcn', @(~,~) obj.refreshAll());
-        end
-
-        % -----------------------------------------------------------------
-        % SECCIÓN: CALLBACKS
-        % -----------------------------------------------------------------
-        function buildCallbackSection(obj, x, y, W)
-            pnl = uipanel(obj.fig, 'Title', 'CALLBACK', ...
-                'FontWeight', 'bold', 'Position', [x y W 110]);
-
-            % Callback registrado actualmente (solo lectura)
-            uilabel(pnl, 'Text', 'Current:', ...
-                'Position', [5 68 48 18], 'FontSize', 9, ...
-                'FontColor', [0.4 0.4 0.4]);
-            obj.lblCurrentCb = uilabel(pnl, ...
-                'Text', '(none)', ...
-                'Position', [58 65 228 22], ...
-                'FontSize', 9, 'FontColor', [0.25 0.25 0.25], ...
-                'WordWrap', 'on', 'Interpreter', 'none');
-
-            % Campo de texto: nombre de función o expresión @
-            obj.edtCbFn = uieditfield(pnl, 'text', ...
-                'Position', [5 38 248 22], ...
-                'Value', '', ...
-                'Placeholder', 'myFunction  or  @(p) expr', ...
-                'Tooltip', 'Function name or @-expression. Use [...] to browse a .m file.');
-            obj.btnCbBrowse = uibutton(pnl, 'Text', '...', ...
-                'Position', [258 38 30 22], ...
-                'Tooltip', 'Browse for a .m file', ...
-                'ButtonPushedFcn', @(~,~) obj.onCbBrowse());
-
-            % Botones acción
-            obj.btnAssignCb = uibutton(pnl, 'Text', '+ Assign', ...
-                'Position', [5 8 130 24], ...
-                'ButtonPushedFcn', @(~,~) obj.onAssignCallback());
-            obj.btnClearCb = uibutton(pnl, 'Text', 'Remove callbacks', ...
-                'Position', [142 8 145 24], ...
-                'ButtonPushedFcn', @(~,~) obj.onClearCallbacks());
         end
 
         % =================================================================
@@ -507,9 +553,55 @@ classdef LDControlPanel < handle
                 end
                 obj.refreshColorVars();
                 obj.refreshSizeVars();
+                obj.refreshSelectionVars();
                 obj.rebuildSyncWsPanel();
                 obj.refreshCallbackDisplay();
             end
+        end
+
+        function refreshWorkspaceConcepts(obj)
+            try
+                vars  = evalin('base', 'whos');
+                ok    = arrayfun(@(v) strcmp(v.class, 'Concept'), vars);
+                found = {vars(ok).name};
+            catch
+                found = {};
+            end
+            obj.ddWsConcept.Items = [{'(none)'}, found];
+            obj.ddWsConcept.Value = '(none)';
+        end
+
+        function refreshSelectionVars(obj)
+            names = obj.ld.getConceptNames();
+            if isempty(names)
+                obj.ddSelVar.Items = {'(no concepts)'};
+                return
+            end
+            c = obj.ld.getConceptByName(obj.activeConcept(names));
+            if strcmp(obj.ddSelType.Value, 'Objectives')
+                labels = c.labels.objectives;
+            else
+                labels = c.labels.parameters;
+            end
+            if isempty(labels)
+                obj.ddSelVar.Items = {'(none)'};
+            else
+                obj.ddSelVar.Items = labels;
+                obj.ddSelVar.Value = labels{1};
+            end
+        end
+
+        function refreshSelectionIdxVars(obj)
+            try
+                vars = evalin('base', 'whos');
+                ok   = arrayfun(@(v) strcmp(v.class,'double') && ...
+                                     numel(v.size)==2 && min(v.size)==1, vars);
+                items = {vars(ok).name};
+            catch
+                items = {};
+            end
+            if isempty(items); items = {'(none)'}; end
+            obj.ddSelIdx.Items = items;
         end
 
         function refreshWorkspaceMatrices(obj)
@@ -593,32 +685,43 @@ classdef LDControlPanel < handle
         end
 
         function rebuildSyncWsPanel(obj)
-            % Borra solo las filas dinámicas (Tag empieza por 'wsrow_'),
-            % preservando el botón Aplicar fijo (Tag 'ws_aplicar').
+            % Delete only dynamic rows (Tag starts with 'wsrow_');
+            % preserve the fixed Apply button (Tag 'ws_aplicar').
             kids = obj.pnlWs.Children;
             for k = 1:numel(kids)
                 if startsWith(kids(k).Tag, 'wsrow_')
                     delete(kids(k));
                 end
             end
-            names = obj.ld.getConceptNames();
-            rowH  = 26; gap = 4;
+            names  = obj.ld.getConceptNames();
+            nC     = numel(names);
+            rowH   = 26; gap = 4;
             wsVars = obj.getWorkspaceVectors(0);
-            % Las filas se apilan de arriba a abajo empezando en y=32
-            % (por encima del botón Aplicar fijo en y=5)
-            for k = 1:numel(names)
-                yRow = 32 + (numel(names) - k) * (rowH + gap);
+            pnlW   = obj.pnlWs.Position(3);   % actual panel width
+
+            % Rows stack upward from y=32 (above the fixed Apply button at y=5)
+            for k = 1:nC
+                yRow = 32 + (nC - k) * (rowH + gap);
                 uilabel(obj.pnlWs, 'Text', names{k}, ...
-                    'Position', [5 yRow 68 20], ...
+                    'Position', [5 yRow 82 20], ...
                     'Tag', sprintf('wsrow_lbl%d', k));
                 uidropdown(obj.pnlWs, ...
-                    'Position', [78 yRow 158 22], ...
+                    'Position', [92 yRow pnlW-122 22], ...
                     'Items', wsVars, ...
                     'Tag', sprintf('wsrow_dd%d', k));
                 uibutton(obj.pnlWs, 'Text', '↺', ...
-                    'Position', [241 yRow 22 22], ...
+                    'Position', [pnlW-26 yRow 22 22], ...
                     'Tag', sprintf('wsrow_ref%d', k), ...
                     'ButtonPushedFcn', @(~,~) obj.rebuildSyncWsPanel());
+            end
+
+            % Resize pnlWs: Apply(27px) + nC rows × 30px, minimum 32px
+            wsH = 32 + nC * (rowH + gap);
+            obj.pnlWs.Position(4) = wsH;
+
+            % If Workspace mode is active, cascade the resize to the section
+            if strcmp(obj.ddSyncType.Value, 'Workspace')
+                obj.updateSyncLayout(wsH);
             end
         end
 
@@ -627,6 +730,25 @@ classdef LDControlPanel < handle
         % =================================================================
 
         function onAddConcept(obj)
+            wsVal = obj.ddWsConcept.Value;
+            if ~strcmp(wsVal, '(none)')
+                % Load an existing Concept object from the workspace
+                try
+                    c = evalin('base', wsVal);
+                    if ~isa(c, 'Concept')
+                        uialert(obj.fig, ...
+                            sprintf('"%s" is not a Concept object.', wsVal), 'Type error');
+                        return
+                    end
+                    obj.ld.addConcept(c);
+                    obj.ddWsConcept.Value = '(none)';
+                    obj.refreshConceptList();
+                catch ME
+                    uialert(obj.fig, ME.message, 'Error loading concept');
+                end
+                return
+            end
+            % Create a new Concept from PF/PS matrices
             try
                 pf   = evalin('base', obj.ddPF.Value);
                 ps   = evalin('base', obj.ddPS.Value);
@@ -634,6 +756,7 @@ classdef LDControlPanel < handle
                 if isempty(name); name = obj.ddPF.Value; end
                 c = Concept(pf, ps, name);
                 obj.ld.addConcept(c);
+                assignin('base', name, c);
                 obj.edtName.Value = 'new';
                 obj.refreshConceptList();
             catch ME
@@ -656,6 +779,7 @@ classdef LDControlPanel < handle
             try
                 c = obj.ld.getConceptByName(name);
                 obj.ld.removeConcept(c);
+                obj.clearWorkspaceConcept(name);
                 obj.refreshConceptList();
             catch ME
                 uialert(obj.fig, ME.message, 'Error removing concept');
@@ -663,11 +787,20 @@ classdef LDControlPanel < handle
         end
 
         function onClearAllConcepts(obj)
+            answer = uiconfirm(obj.fig, ...
+                'Remove all concepts from the Level Diagram?', ...
+                'Clear All Concepts', ...
+                'Options',       {'Remove All', 'Cancel'}, ...
+                'DefaultOption', 2, ...
+                'CancelOption',  2);
+            if ~strcmp(answer, 'Remove All'); return; end
             try
+                obj.ld.closeAllFigures();
                 names = obj.ld.getConceptNames();
                 for k = 1:numel(names)
                     c = obj.ld.getConceptByName(names{k});
                     obj.ld.removeConcept(c);
+                    obj.clearWorkspaceConcept(names{k});
                 end
                 obj.refreshConceptList();
             catch ME
@@ -744,6 +877,12 @@ classdef LDControlPanel < handle
             tipo = obj.ddSyncType.Value;
             obj.pnlLp.Visible = strcmp(tipo, 'Norm');
             obj.pnlWs.Visible = strcmp(tipo, 'Workspace');
+            if strcmp(tipo, 'Norm')
+                obj.updateSyncLayout(58);
+            else
+                % Rebuild rows and cascade layout in one step
+                obj.rebuildSyncWsPanel();
+            end
         end
 
         function onSyncApply(obj)
@@ -777,7 +916,68 @@ classdef LDControlPanel < handle
         function onConceptChanged(obj)
             obj.refreshColorVars();
             obj.refreshSizeVars();
+            obj.refreshSelectionVars();
             obj.refreshCallbackDisplay();
+        end
+
+        function onSelTypeChanged(obj)
+            obj.refreshSelectionVars();
+        end
+
+        function onSelectByCondition(obj)
+            try
+                names = obj.ld.getConceptNames();
+                if isempty(names); return; end
+                c    = obj.ld.getConceptByName(obj.activeConcept(names));
+                data = obj.getSelectionData(c);
+                if isempty(data); return; end
+                idx  = obj.applySelOperator(data, obj.ddSelOp.Value, obj.edtSelVal.Value);
+                obj.ld.selectPoints(c, idx);
+            catch ME
+                uialert(obj.fig, ME.message, 'Selection error');
+            end
+        end
+
+        function onAddToSelection(obj)
+            try
+                names = obj.ld.getConceptNames();
+                if isempty(names); return; end
+                c    = obj.ld.getConceptByName(obj.activeConcept(names));
+                data = obj.getSelectionData(c);
+                if isempty(data); return; end
+                idx  = obj.applySelOperator(data, obj.ddSelOp.Value, obj.edtSelVal.Value);
+                obj.ld.addToSelection(c, idx);
+            catch ME
+                uialert(obj.fig, ME.message, 'Selection error');
+            end
+        end
+
+        function onClearSelection(obj)
+            try
+                obj.ld.clearSelection();
+            catch ME
+                uialert(obj.fig, ME.message, 'Error clearing selection');
+            end
+        end
+
+        function onSelectFromWS(obj)
+            varName = obj.ddSelIdx.Value;
+            if ismember(varName, {'(none)', '(refresh ↺)'}); return; end
+            try
+                idx = evalin('base', varName);
+                idx = idx(:);
+                if ~isnumeric(idx)
+                    uialert(obj.fig, ...
+                        sprintf('"%s" must be a numeric vector.', varName), 'Type error');
+                    return
+                end
+                names = obj.ld.getConceptNames();
+                if isempty(names); return; end
+                c = obj.ld.getConceptByName(obj.activeConcept(names));
+                obj.ld.selectPoints(c, idx);
+            catch ME
+                uialert(obj.fig, ME.message, 'Error selecting from workspace');
+            end
         end
 
         function onColorApply(obj)
@@ -955,6 +1155,85 @@ classdef LDControlPanel < handle
         % =================================================================
         % UTILIDADES
         % =================================================================
+
+        function clearWorkspaceConcept(~, varName)
+            % Elimina del workspace base la variable del concepto, pero solo
+            % si sigue apuntando a un Concept (para no borrar variables del usuario).
+            if ~isvarname(varName); return; end
+            try
+                v = evalin('base', varName);
+                if isa(v, 'Concept')
+                    evalin('base', ['clear ' varName]);
+                end
+            catch
+            end
+        end
+
+        function updateSyncLayout(obj, subH)
+            % Resize the SYNC section to accommodate subH for the active sub-panel,
+            % then reposition the CONCEPTS section and resize the figure accordingly.
+            %
+            % Layout inside pnlSync (y from bottom):
+            %   y=5            : bottom of active sub-panel
+            %   y=5+subH       : top of sub-panel  (= headerY - 8)
+            %   y=5+subH+8     : bottom of header (Type + Reset row)
+            %   y=5+subH+8+24  : top of header
+            %   +26px title    : panel title area (font + border)
+            %
+            headerY  = 5 + subH + 8;
+            newSyncH = headerY + 24 + 26;
+
+            % Resize both sub-panels (only one is visible, both share the space)
+            obj.pnlLp.Position(4) = subH;
+            obj.pnlWs.Position(4) = subH;
+
+            % Move the header row
+            obj.pnlSyncHeader.Position(2) = headerY;
+
+            % Resize SYNC section panel
+            oldSyncH = obj.pnlSync.Position(4);
+            if newSyncH == oldSyncH; return; end
+            obj.pnlSync.Position(4) = newSyncH;
+
+            % Reposition CONCEPTS section: keep 5px gap above SYNC
+            syncY         = obj.pnlSync.Position(2);
+            newConceptsY  = syncY + newSyncH + 5;
+            obj.pnlConcepts.Position(2) = newConceptsY;
+
+            % Resize figure to fit, keeping figure bottom fixed
+            conceptsH  = obj.pnlConcepts.Position(4);
+            newFigH    = newConceptsY + conceptsH + 18;
+            oldFigH    = obj.fig.Position(4);
+            if newFigH ~= oldFigH
+                obj.fig.Position(2) = obj.fig.Position(2) - (newFigH - oldFigH);
+                obj.fig.Position(4) = newFigH;
+            end
+        end
+
+        function data = getSelectionData(obj, c)
+            varLabel = obj.ddSelVar.Value;
+            if strcmp(obj.ddSelType.Value, 'Objectives')
+                colIdx = find(strcmp(c.labels.objectives, varLabel), 1);
+                if isempty(colIdx); data = []; return; end
+                data = c.objectives(:, colIdx);
+            else
+                colIdx = find(strcmp(c.labels.parameters, varLabel), 1);
+                if isempty(colIdx); data = []; return; end
+                data = c.parameters(:, colIdx);
+            end
+        end
+
+        function idx = applySelOperator(~, data, op, val)
+            switch op
+                case '>';  idx = find(data >  val);
+                case '<';  idx = find(data <  val);
+                case '>='; idx = find(data >= val);
+                case '<='; idx = find(data <= val);
+                case '=='; idx = find(data == val);
+                case '~='; idx = find(data ~= val);
+                otherwise; idx = [];
+            end
+        end
 
         function name = activeConcept(obj, names)
             % Devuelve el nombre del concepto activo; si no es válido, devuelve el primero.
