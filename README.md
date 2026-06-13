@@ -16,14 +16,15 @@ Pareto fronts using the **Level Diagram** technique.
 - `addConcept` validates objective count and labels; label mismatches trigger an interactive dialog
 - Adding a concept after `draw()` updates all figures automatically — no redraw needed
 - Interactive point selection: click, rectangular drag, Shift for multi-selection
-- Customizable colors (per-point colormap or RGB), sizes, and markers
-- Synchronized Y-axis (`f_sync`) based on p-norm (1, 2, ∞) or any external indicator
+- `selectPoints` / `addToSelection` for programmatic selection by index
+- Customizable colors (per-point colormap or RGB), sizes (up to 200 pts²), and markers
+- Synchronized Y-axis (`f_sync`) based on p-norm (1, 2, ∞) or any external vector per concept
 - `syncBy` / `syncByNorm` reset the Y-axis label; use `setSyncLabel` to assign a descriptive name
 - Y-axis label propagates to the Info Panel column header and CSV exports
 - Concept visibility toggle (checkbox) hides the concept from all figures including the Info Panel
 - Export selection to workspace or CSV
 - Register callbacks triggered on point selection; `punto` struct includes `selectionIdx` and `selectionSize`
-- `LDControlPanel` — point-and-click GUI for all common operations (add/remove concepts, colour, size, sync, callbacks) without writing code
+- `LDControlPanel` — tab-based GUI with bidirectional workspace access: concepts created from the panel appear in the workspace, and workspace concepts/vectors can be loaded back into the panel; includes a Selection tab to filter points by condition without writing code
 
 ## Project structure
 

@@ -478,6 +478,35 @@ ld.selectPoints(c1, idx)
 
 ---
 
+### `addToSelection`
+
+```matlab
+ld.addToSelection(concept, indices)
+```
+
+Adds points to the **existing** selection of a concept (union), without clearing previously selected points. Useful for building up a selection incrementally from the command line or from the panel's **+ Add to sel.** button.
+
+**Arguments**
+
+| Name | Type | Description |
+|---|---|---|
+| `concept` | `Concept` or `int` | Source concept object or its numeric index |
+| `indices` | `(k × 1) int` | Row indices to add to the current selection |
+
+**Example**
+
+```matlab
+% Start with one condition
+idx1 = find(c1.parameters(:,3) > 0);
+ld.selectPoints(c1, idx1)
+
+% Add points from a second condition
+idx2 = find(c1.objectives(:,1) < 0.2);
+ld.addToSelection(c1, idx2)
+```
+
+---
+
 ### `deletePoints`
 
 ```matlab
@@ -532,6 +561,25 @@ Programmatic equivalent of the **"Delete sel."** button: removes the points curr
 ```matlab
 ld.selectPoints(c1, find(c1.parameters(:,1) > 0.5));
 ld.deleteSelection(c1);   % same as clicking "Delete sel." in the Info Panel
+```
+
+---
+
+### `closeAllFigures`
+
+```matlab
+ld.closeAllFigures()
+```
+
+Closes all open figures associated with this Level Diagram (objectives figure, per-concept parameter figures, and the Info Panel) and resets the internal figure handles. Useful for cleaning up before calling `draw()` programmatically, or when removing all concepts.
+
+`draw()` calls this automatically at the start, so you do not need to call it explicitly before redrawing.
+
+**Example**
+
+```matlab
+ld.closeAllFigures()   % close everything
+ld.draw()              % open fresh figures
 ```
 
 ---
