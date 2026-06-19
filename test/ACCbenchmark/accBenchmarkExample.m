@@ -59,6 +59,7 @@ ld.addConcept(c1);
 disp(ld)
 ld.draw();
 ld.setSyncLabel('L2 norm');
+% panel = ld.showPanel();
 
 %% 5. Colour by asymmetric distance to the tolerable point
 % Asymmetric distance measures how far each solution is from dominating
