@@ -24,32 +24,40 @@ classdef LDControlPanel < handle
     %               variable.
     %   "Reset bounds" restores the original per-concept axis limits.
     %
-    % ── ACTIVE CONCEPT dropdown ──────────────────────────────────────────
-    %   Selects which concept is targeted by the COLOR, SIZE and CALLBACK
-    %   sections below.
+    % ── ACTIVE CONCEPT section ───────────────────────────────────────────
+    %   Dropdown selects which concept is targeted by the four tabs below.
+    %   Each tab acts on the active concept independently.
     %
-    % ── COLOR section ────────────────────────────────────────────────────
-    %   "According to" dropdown:
-    %     Uniform (base color) — solid colour chosen via the palette button
-    %                            or by typing an RGB triplet (0–1 values).
-    %     Concept objectives   — colour mapped to an objective column.
-    %     Concept parameters   — colour mapped to a parameter column.
-    %     Workspace            — colour mapped to a workspace vector.
-    %   Choose a colormap, optionally invert it, then click "Apply color".
-    %   "↺ Refresh panel from LD" reads back the current colour from the
-    %   diagram and updates the picker/RGB field automatically.
+    %   Tab — Selection:
+    %     Filter and select points by objective or parameter value.
+    %     Choose a column, an operator (>, <, >=, <=, ==, ~=) and a
+    %     threshold, then click "Select" (replace) or "+ Add to sel."
+    %     (accumulate).  "Clear selection" deselects all points.
+    %     "WS idx" feeds a numeric index vector from the workspace directly
+    %     into the selection via "Use".
     %
-    % ── SIZE AND MARKER section ───────────────────────────────────────────
-    %   Uniform : a slider sets a fixed marker size for all points.
-    %   Variable: scales marker size between a min and max (pts) according
-    %             to a selected variable.
-    %   Marker shape: circle, square, triangle, diamond, inverted triangle.
+    %   Tab — Color:
+    %     "According to" dropdown:
+    %       Uniform (base color) — solid colour chosen via the palette button
+    %                              or by typing an RGB triplet (0–1 values).
+    %       Concept objectives   — colour mapped to an objective column.
+    %       Concept parameters   — colour mapped to a parameter column.
+    %       Workspace            — colour mapped to a workspace vector.
+    %     Choose a colormap, optionally invert it, then click "Apply color".
+    %     "↺ Refresh panel from LD" reads back the current colour from the
+    %     diagram and updates the picker/RGB field automatically.
     %
-    % ── CALLBACK section ─────────────────────────────────────────────────
-    %   Type a function name or @-expression in the text field, or click
-    %   "..." to browse for a .m file.  "Assign" registers the callback
-    %   with ld.onSelect(); "Remove callbacks" clears all callbacks for
-    %   the active concept.
+    %   Tab — Size & Marker:
+    %     Uniform : a slider sets a fixed marker size for all points.
+    %     Variable: scales marker size between a min and max (pts) according
+    %               to a selected variable.
+    %     Marker shape: circle, square, triangle, diamond, inverted triangle.
+    %
+    %   Tab — Callback:
+    %     Type a function name or @-expression in the text field, or click
+    %     "..." to browse for a .m file.  "Assign" registers the callback
+    %     with ld.onSelect(); "Remove callbacks" clears all callbacks for
+    %     the active concept.
     %
     % ── Refresh button ────────────────────────────────────────────────────
     %   "↺ Refresh panel from LD" synchronises the panel with external
