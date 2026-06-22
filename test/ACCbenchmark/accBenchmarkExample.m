@@ -51,7 +51,7 @@ vgpp = gppl(pf, pref);                        % GPP index only
 c1 = Concept(pf, ps, 'accBenchmark');
 c1.labels.objectives = {'f1-Robust Stab.','f2-Max. u','f3-Worst te', ...
                          'f4-Noise Sens.','f5-Nom. u','f6-Nom. te'};
-c1.labels.parameters = {'x1','x2','x3','x4','x5','x6'};
+c1.labels.parameters = {'b2','b1','b0','a2','a1','a0'};
 disp(c1)
 
 ld = LevelDiagram('ld1');
